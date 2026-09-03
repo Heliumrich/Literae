@@ -1,0 +1,70 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import CatalogToolbar from "../../components/CatalogToolbar.astro";
+import CollectionHeader from "../../components/CollectionHeader.astro";
+import PersonCard from "../../components/PersonCard.astro";
+import { fetchArtistsList } from "../../lib/directus";
+import { PAGE_SIZE, parseTags } from "../../lib/catalog";
+import { PERSON_TYPES } from "../../lib/people";
+import { ART_BASE } from "../../lib/site-links";
+
+export const prerender = true;
+
+const people = await fetchArtistsList();
+const allTags = [...new Set(people.flatMap((person) => parseTags(person.tags)))].sort((a, b) =>
+  a.localeCompare(b, "fr"),
+);
+const firstPage = people.slice(0, PAGE_SIZE);
+---
+
+<BaseLayout gallery title="Personnalités" description="Artistes, saints, souverains et écrivains du catalogue Literae">
+  <main>
+    <div class="page-wrap">
+      <CollectionHeader
+        eyebrow="Contempler · Visages & héritages"
+        title="Les personnalités"
+        lead="Artistes, saints, souverains et écrivains : les vies qui éclairent les œuvres et la tradition rassemblées par Literae."
+        count={people.length}
+        countLabel={people.length > 1 ? "notices" : "notice"}
+        backHref={`${ART_BASE}/`}
+        backLabel="Contempler"
+      />
+    </div>
+
+    <section class="catalog-section" aria-label="Catalogue des personnalités">
+      <div class="page-wrap">
+        <div id="type-filters" class="type-filter-row" role="group" aria-label="Filtrer par rôle">
+          {PERSON_TYPES.map((type) => (
+            <button
+              type="button"
+              class="type-filter tag-pill"
+              data-type={type.key}
+              aria-pressed="false"
+            >
+              {type.fr}
+            </button>
+          ))}
+        </div>
+
+        <CatalogToolbar tags={allTags} searchPlaceholder="Rechercher un nom ou une fonction…" />
+        <p id="catalog-status" class="catalog-status" aria-live="polite"></p>
+        <p id="catalog-empty" class="catalog-empty hidden">
+          Aucune personnalité ne correspond.
+        </p>
+
+        <div id="catalog-grid" class="catalog-grid" data-ssr="1">
+          {firstPage.map((person, index) => (
+            <PersonCard person={person} index={index} />
+          ))}
+        </div>
+
+        <nav id="catalog-pager" class="catalog-pager" aria-label="Pagination"></nav>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { initCatalog } from "../../lib/catalog-client";
+  initCatalog({ jsonUrl: "/personalites.json", kind: "artist" });
+</script>

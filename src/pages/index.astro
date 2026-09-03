@@ -1,0 +1,617 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Fleur from "../components/Fleur.astro";
+import {
+  fetchFromDirectus,
+  fileIdOf,
+  getAssetURL,
+  getArtworkTitle,
+} from "../lib/directus";
+import { ART_BASE } from "../lib/site-links";
+
+type Artwork = {
+  id: string | number;
+  slug: string;
+  title_french?: string | null;
+  title_original?: string | null;
+  title_english?: string | null;
+  year?: string | number | null;
+  image?: unknown;
+};
+
+const artworks =
+  (await fetchFromDirectus<Artwork[]>(
+    "artworks?filter[status][_eq]=published&fields=id,slug,title_french,title_original,title_english,year,image&sort=-date_created&limit=6",
+  )) || [];
+
+const featured = artworks.find((work) => fileIdOf(work.image));
+const featuredImage = featured
+  ? getAssetURL(fileIdOf(featured.image), "large")
+  : null;
+const recent = artworks.filter((work) => work.id !== featured?.id).slice(0, 4);
+
+const gestures = [
+  {
+    number: "I",
+    label: "Lire",
+    title: "Les textes en regard",
+    body: "Comparer une même parole dans plusieurs traductions françaises et latines, verset après verset, sans perdre le fil de la lecture.",
+    href: "/scriptorium/comparateur",
+    cta: "Ouvrir le comparateur",
+  },
+  {
+    number: "II",
+    label: "Contempler",
+    title: "Un cabinet d’art chrétien",
+    body: "Parcourir les œuvres, leurs auteurs et les figures qu’elles représentent dans une galerie pensée comme une exposition.",
+    href: `${ART_BASE}/`,
+    cta: "Entrer dans la galerie",
+  },
+  {
+    number: "III",
+    label: "Prier",
+    title: "Les mots de l’Église",
+    body: "Retrouver les prières fondamentales en français et en latin, disposées pour la lecture, l’apprentissage et le recueillement.",
+    href: "/prieres",
+    cta: "Consulter le mémento",
+  },
+];
+---
+
+<BaseLayout
+  gallery
+  title="Literae"
+  description="Un atelier catholique francophone pour lire la Sainte Écriture, contempler l’art chrétien et prier avec les mots de l’Église."
+>
+  <main>
+    <section class="hero">
+      <div class="page-wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Atelier catholique francophone</p>
+          <h1>
+            Lire le texte.<br />
+            Contempler le beau.<br />
+            <em>Habiter la prière.</em>
+          </h1>
+          <p class="hero-lede">
+            Literae rassemble des traductions bibliques rares, l’héritage de l’art
+            chrétien et les mots de la prière dans un même lieu de lecture.
+          </p>
+          <div class="hero-actions">
+            <a href="/scriptorium/comparateur" class="editorial-button">
+              Comparer un passage
+              <span aria-hidden="true">→</span>
+            </a>
+            <a href={`${ART_BASE}/`} class="editorial-button-secondary">
+              Parcourir les œuvres
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-art" class:is-placeholder={!featuredImage}>
+          {
+            featuredImage && featured ? (
+              <a href={`${ART_BASE}/oeuvres/${featured.slug}`} aria-label={`Voir ${getArtworkTitle(featured)}`}>
+                <img
+                  src={featuredImage}
+                  alt={getArtworkTitle(featured)}
+                  width="760"
+                  height="980"
+                  loading="eager"
+                  fetchpriority="high"
+                />
+              </a>
+            ) : (
+              <Fleur class="hero-fleur text-gold" title="Literae" />
+            )
+          }
+          {
+            featured && (
+              <p class="hero-caption">
+                <span>Œuvre choisie</span>
+                <a href={`${ART_BASE}/oeuvres/${featured.slug}`}>
+                  {getArtworkTitle(featured)}{featured.year ? `, ${featured.year}` : ""}
+                </a>
+              </p>
+            )
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="verse-band" aria-labelledby="verse-heading">
+      <div class="page-wrap verse-grid">
+        <div>
+          <p class="eyebrow" id="verse-heading">Au seuil du livre</p>
+          <p class="verse-reference">Jean 1, 1</p>
+        </div>
+        <blockquote>
+          « Au commencement était le Verbe, et le Verbe était auprès de Dieu,
+          et le Verbe était Dieu. »
+        </blockquote>
+        <div class="verse-source">
+          <span>Bible Crampon · 1923</span>
+          <a href="/scriptorium/comparateur" class="editorial-link">Comparer ce verset →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="page-wrap gestures" aria-labelledby="gestures-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Les trois gestes</p>
+          <h2 id="gestures-title">Un lieu, trois manières d’entrer.</h2>
+        </div>
+        <p>
+          Pas un portail de ressources, mais un atelier : chaque espace privilégie le
+          temps long, la clarté et la présence du contenu.
+        </p>
+      </div>
+
+      <div class="gesture-list">
+        {
+          gestures.map((item) => (
+            <article class="gesture">
+              <div class="gesture-number" aria-hidden="true">{item.number}</div>
+              <div>
+                <p class="eyebrow">{item.label}</p>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+                <a href={item.href} class="editorial-link">{item.cta} →</a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </section>
+
+    {
+      recent.length > 0 && (
+        <section class="art-preview" aria-labelledby="recent-title">
+          <div class="page-wrap">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Contempler</p>
+                <h2 id="recent-title">Dernières œuvres déposées</h2>
+              </div>
+              <a href={`${ART_BASE}/oeuvres`} class="editorial-link">Voir toute la collection →</a>
+            </div>
+            <div class="art-row">
+              {recent.map((work, index) => {
+                const image = getAssetURL(fileIdOf(work.image), "medium");
+                return (
+                  <a href={`${ART_BASE}/oeuvres/${work.slug}`} class="art-card">
+                    <div class="art-image">
+                      {image ? (
+                        <img
+                          src={image}
+                          alt={getArtworkTitle(work)}
+                          width="540"
+                          height="680"
+                          loading={index < 2 ? "eager" : "lazy"}
+                        />
+                      ) : (
+                        <Fleur class="size-16 text-gold opacity-40" />
+                      )}
+                    </div>
+                    <h3>{getArtworkTitle(work)}</h3>
+                    {work.year && <p>{work.year}</p>}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    <section class="page-wrap future" aria-label="Espaces à venir">
+      <p class="eyebrow">Le chantier continue</p>
+      <div class="future-grid">
+        <div>
+          <h2>L’année liturgique</h2>
+          <p>Un calendrier complet viendra inscrire la lecture dans le rythme de l’Église.</p>
+          <a href="/calendrier" class="editorial-link">Voir l’espace en préparation →</a>
+        </div>
+        <div>
+          <h2>Musique sacrée</h2>
+          <p>Chant grégorien, litanies, traditions orthodoxes et musique classique trouveront ici leur écrin.</p>
+          <a href="/musique" class="editorial-link">Découvrir le projet →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .hero {
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-grid {
+    display: grid;
+    min-height: min(47rem, calc(100dvh - 4.75rem));
+    grid-template-columns: minmax(0, 1.02fr) minmax(20rem, 0.78fr);
+    align-items: stretch;
+  }
+
+  .hero-copy {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(4.5rem, 9vw, 8rem) clamp(2rem, 6vw, 6rem) clamp(4rem, 8vw, 7rem) 0;
+  }
+
+  .hero-copy::after {
+    position: absolute;
+    z-index: -1;
+    top: 15%;
+    right: 5%;
+    width: 15rem;
+    height: 15rem;
+    border: 1px solid color-mix(in oklab, var(--gold) 18%, transparent);
+    border-radius: 999px;
+    content: "";
+  }
+
+  .hero h1 {
+    max-width: 13ch;
+    margin-top: 1.25rem;
+    font-size: clamp(3.4rem, 6.6vw, 6.6rem);
+    line-height: 0.88;
+  }
+
+  .hero h1 em {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .hero-lede {
+    max-width: 35rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: clamp(1.08rem, 1.55vw, 1.28rem);
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2.2rem;
+  }
+
+  .hero-art {
+    position: relative;
+    min-height: 38rem;
+    margin-right: calc((100vw - min(100vw - 2rem, 76rem)) / -2);
+    background: var(--bg-secondary);
+  }
+
+  .hero-art > a {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.82) contrast(1.04);
+  }
+
+  .hero-art::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, color-mix(in oklab, var(--bg) 18%, transparent), transparent 38%);
+    content: "";
+    pointer-events: none;
+  }
+
+  .hero-art.is-placeholder {
+    display: grid;
+    place-items: center;
+    background:
+      linear-gradient(color-mix(in oklab, var(--bg-secondary) 80%, transparent), color-mix(in oklab, var(--bg-secondary) 80%, transparent)),
+      url("/textures/parchment.png");
+  }
+
+  .hero-fleur {
+    width: min(58%, 20rem);
+    opacity: 0.34;
+  }
+
+  .hero-caption {
+    position: absolute;
+    z-index: 2;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 250, 240, 0.62);
+    color: #fffaf0;
+    font-size: 0.8rem;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+  }
+
+  .hero-caption span {
+    font-family: var(--type-ui);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .verse-band {
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  .verse-grid {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr) 13rem;
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: center;
+    padding-top: 2.25rem;
+    padding-bottom: 2.25rem;
+  }
+
+  .verse-reference {
+    margin-top: 0.35rem;
+    font-family: var(--type-display);
+    font-size: 1.5rem;
+  }
+
+  blockquote {
+    font-family: var(--type-display);
+    font-size: clamp(1.55rem, 2.5vw, 2.2rem);
+    font-style: italic;
+    line-height: 1.25;
+  }
+
+  .verse-source {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    align-items: flex-start;
+    color: var(--text-subtle);
+    font-size: 0.76rem;
+  }
+
+  .gestures,
+  .future {
+    padding-top: clamp(5rem, 9vw, 8rem);
+    padding-bottom: clamp(5rem, 9vw, 8rem);
+  }
+
+  .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+    gap: 3rem;
+    align-items: end;
+  }
+
+  .section-heading h2 {
+    max-width: 17ch;
+    margin-top: 0.75rem;
+    font-size: clamp(2.7rem, 5vw, 4.8rem);
+    line-height: 0.95;
+  }
+
+  .section-heading > p {
+    color: var(--text-muted);
+    font-size: 1rem;
+  }
+
+  .section-heading.compact h2 {
+    font-size: clamp(2.4rem, 4vw, 3.6rem);
+  }
+
+  .section-heading.compact > a {
+    justify-self: end;
+  }
+
+  .gesture-list {
+    margin-top: clamp(3.5rem, 7vw, 6rem);
+    border-top: 1px solid var(--border);
+  }
+
+  .gesture {
+    display: grid;
+    grid-template-columns: clamp(4rem, 9vw, 8rem) 1fr;
+    gap: clamp(1.5rem, 5vw, 4.5rem);
+    padding: clamp(2.2rem, 4vw, 3.6rem) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gesture-number {
+    color: color-mix(in oklab, var(--gold) 55%, var(--bg));
+    font-family: var(--type-display);
+    font-size: clamp(3.5rem, 8vw, 6.5rem);
+    font-style: italic;
+    line-height: 0.8;
+  }
+
+  .gesture h3 {
+    margin-top: 0.45rem;
+    font-size: clamp(2rem, 3.2vw, 3.1rem);
+  }
+
+  .gesture div > p:not(.eyebrow) {
+    max-width: 42rem;
+    margin: 0.8rem 0 1.3rem;
+    color: var(--text-muted);
+  }
+
+  .art-preview {
+    padding: clamp(4.5rem, 8vw, 7rem) 0;
+    border-block: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  .art-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+
+  .art-card {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .art-image {
+    display: grid;
+    aspect-ratio: 4 / 5;
+    place-items: center;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+
+  .art-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.88);
+    transition: filter 220ms ease, transform 420ms ease;
+  }
+
+  .art-card:hover .art-image img {
+    filter: saturate(1);
+    transform: scale(1.025);
+  }
+
+  .art-card h3 {
+    margin-top: 0.8rem;
+    font-size: 1.3rem;
+    line-height: 1.1;
+  }
+
+  .art-card p {
+    margin-top: 0.25rem;
+    color: var(--text-subtle);
+    font-size: 0.78rem;
+  }
+
+  .future {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .future-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin-top: 2rem;
+    border-block: 1px solid var(--border);
+  }
+
+  .future-grid > div {
+    padding: 2.5rem 3rem 2.5rem 0;
+  }
+
+  .future-grid > div + div {
+    padding-right: 0;
+    padding-left: 3rem;
+    border-left: 1px solid var(--border);
+  }
+
+  .future h2 {
+    font-size: 2.1rem;
+  }
+
+  .future-grid p {
+    max-width: 31rem;
+    margin: 0.7rem 0 1.25rem;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 900px) {
+    .hero-grid {
+      width: 100%;
+      grid-template-columns: 1fr;
+    }
+
+    .hero-copy {
+      width: min(100% - 2rem, 46rem);
+      margin-inline: auto;
+      padding-right: 0;
+    }
+
+    .hero-art {
+      min-height: 34rem;
+      margin: 0;
+    }
+
+    .verse-grid {
+      grid-template-columns: 8rem minmax(0, 1fr);
+    }
+
+    .verse-source {
+      grid-column: 2;
+    }
+
+    .section-heading {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .section-heading.compact > a {
+      justify-self: start;
+    }
+
+    .art-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: 2.2rem;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 {
+      font-size: clamp(3.2rem, 16vw, 4.6rem);
+    }
+
+    .hero-art {
+      min-height: 29rem;
+    }
+
+    .hero-caption {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .verse-grid {
+      grid-template-columns: 1fr;
+      gap: 1.2rem;
+    }
+
+    .verse-source {
+      grid-column: auto;
+    }
+
+    .gesture {
+      grid-template-columns: 3.2rem 1fr;
+    }
+
+    .future-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .future-grid > div,
+    .future-grid > div + div {
+      padding: 2rem 0;
+      border-left: 0;
+    }
+
+    .future-grid > div + div {
+      border-top: 1px solid var(--border);
+    }
+  }
+</style>

@@ -1,0 +1,67 @@
+---
+import Fleur from "./Fleur.astro";
+import { ART_BASE, MAIN_BASE } from "../lib/site-links";
+
+const groups = [
+  {
+    title: "Lire",
+    links: [
+      { href: `${MAIN_BASE}/scriptorium/comparateur`, label: "Comparateur biblique" },
+      { href: `${MAIN_BASE}/scriptorium/bibliotheque`, label: "Bibliothèque" },
+    ],
+  },
+  {
+    title: "Contempler",
+    links: [
+      { href: `${ART_BASE}/oeuvres`, label: "Œuvres" },
+      { href: `${ART_BASE}/personalites`, label: "Personnalités" },
+    ],
+  },
+  {
+    title: "Habiter",
+    links: [
+      { href: `${MAIN_BASE}/prieres`, label: "Prières" },
+      { href: `${MAIN_BASE}/calendrier`, label: "Calendrier" },
+      { href: `${MAIN_BASE}/musique`, label: "Musique" },
+    ],
+  },
+];
+---
+
+<footer class="site-footer mt-auto border-t border-border">
+  <div class="page-wrap grid gap-10 py-12 md:grid-cols-[1.25fr_2fr] md:py-16">
+    <div>
+      <div class="flex items-center gap-3">
+        <Fleur class="size-8 shrink-0 text-gold" />
+        <p class="brand-name text-lg tracking-[0.08em]">Literae</p>
+      </div>
+      <p class="mt-5 max-w-sm text-base italic text-muted">
+        « Tolle, lege » — prends et lis.
+      </p>
+      <p class="mt-3 max-w-sm text-sm text-subtle">
+        Un atelier catholique francophone pour lire, contempler et prier.
+      </p>
+    </div>
+
+    <nav class="grid grid-cols-2 gap-8 sm:grid-cols-3" aria-label="Pied de page">
+      {
+        groups.map((group) => (
+          <div>
+            <p class="eyebrow">{group.title}</p>
+            <ul class="mt-4 space-y-2 text-sm text-muted">
+              {group.links.map((link) => (
+                <li><a href={link.href} class="hover:text-fg">{link.label}</a></li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </nav>
+  </div>
+  <div class="border-t border-border">
+    <div class="page-wrap flex flex-wrap items-center justify-between gap-3 py-5 text-xs text-subtle">
+      <p>Literae · Atelier indépendant</p>
+      <a href={`${MAIN_BASE}/a-propos`} class="hover:text-fg">À propos & colophon</a>
+    </div>
+  </div>
+</footer>

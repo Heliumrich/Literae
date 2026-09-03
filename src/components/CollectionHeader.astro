@@ -1,0 +1,36 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  count?: number;
+  countLabel?: string;
+  backHref?: string;
+  backLabel?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  lead,
+  count,
+  countLabel = "entrées",
+  backHref,
+  backLabel = "Retour",
+} = Astro.props;
+---
+
+<header class="collection-header">
+  {backHref && <a href={backHref} class="collection-back">← {backLabel}</a>}
+  <p class="eyebrow">{eyebrow}</p>
+  <h1>{title}</h1>
+  <div class="collection-header-foot">
+    <p>{lead}</p>
+    {typeof count === "number" && (
+      <p class="collection-count">
+        <strong>{count}</strong>
+        <span>{countLabel}</span>
+      </p>
+    )}
+  </div>
+</header>

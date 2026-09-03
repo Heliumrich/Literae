@@ -1,0 +1,6 @@
+---
+export function getStaticPaths() {
+  return [];
+}
+return Astro.redirect(`/personalites/${Astro.params.slug ?? ""}`, 301);
+---

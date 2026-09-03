@@ -1,0 +1,21 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PlaceholderPage from "../components/PlaceholderPage.astro";
+---
+
+<BaseLayout
+  title="Calendrier liturgique"
+  description="Le futur calendrier liturgique de Literae est en préparation."
+>
+  <PlaceholderPage
+    eyebrow="Aujourd’hui"
+    title="L’année liturgique"
+    lead="Un calendrier pour situer chaque jour dans le temps de l’Église, retrouver les fêtes et laisser la lecture suivre le rythme de l’année."
+    note="Page réservée — mise en œuvre ultérieure"
+    items={[
+      "Le temps liturgique, la couleur du jour et le degré de célébration.",
+      "Les solennités, fêtes, mémoires et principaux repères du sanctoral.",
+      "Des liens vers les lectures, prières et œuvres associés à chaque temps.",
+    ]}
+  />
+</BaseLayout>

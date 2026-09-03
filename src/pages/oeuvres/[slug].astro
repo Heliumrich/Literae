@@ -1,0 +1,354 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Fleur from "../../components/Fleur.astro";
+import {
+  fetchAllFromDirectus,
+  fileIdOf,
+  getAssetURL,
+  getArtworkTitle,
+  looksLikeHtml,
+} from "../../lib/directus";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const works = await fetchAllFromDirectus<any>(
+    "artworks?filter[status][_eq]=published&fields=*,artist.id,artist.slug,artist.name,depicted.artists_id.id,depicted.artists_id.slug,depicted.artists_id.name&sort=-date_created",
+  );
+  return works
+    .filter((work) => work?.slug)
+    .map((work) => ({
+      params: { slug: String(work.slug) },
+      props: { work },
+    }));
+}
+
+const { work } = Astro.props;
+const slug = String(work.slug);
+const title = getArtworkTitle(work);
+const imageId = fileIdOf(work.image);
+const imageMedium = getAssetURL(imageId, "medium");
+const imageLarge = getAssetURL(imageId, "large");
+const imageXlarge = getAssetURL(imageId, "xlarge");
+const imageOriginal = getAssetURL(imageId);
+const locationLines = String(work.location || "")
+  .split(",")
+  .map((line) => line.trim())
+  .filter(Boolean);
+const depicted = Array.isArray(work.depicted)
+  ? work.depicted
+      .map((relation: any) => relation.artists_id || relation)
+      .filter((person: any) => person && (person.slug || person.name))
+  : [];
+const tags = Array.isArray(work.tags)
+  ? work.tags
+  : typeof work.tags === "string"
+    ? work.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean)
+    : [];
+const titleOriginal =
+  work.title_original && work.title_original !== title ? work.title_original : null;
+---
+
+<BaseLayout gallery title={title} description={work.description?.slice?.(0, 160) || title}>
+  <main>
+    <div class="page-wrap">
+      <a href="/oeuvres" class="detail-back">← Toutes les œuvres</a>
+
+      <article class="artwork-detail">
+        <div class="artwork-visual">
+          <figure>
+            {
+              imageLarge ? (
+                <img
+                  src={imageLarge}
+                  alt={title}
+                  width="1800"
+                  height="1800"
+                  loading="eager"
+                  fetchpriority="high"
+                  decoding="async"
+                  data-lightbox
+                  data-alt={title}
+                  data-href={`/oeuvres/${slug}`}
+                  data-medium={imageMedium || ""}
+                  data-large={imageLarge}
+                  data-xlarge={imageXlarge || ""}
+                  data-original={imageOriginal || ""}
+                />
+              ) : (
+                <div class="artwork-missing">
+                  <Fleur class="text-gold" />
+                  <span>Image non disponible</span>
+                </div>
+              )
+            }
+          </figure>
+          <div class="visual-actions">
+            <p>Cliquer sur l’œuvre pour l’observer en plein écran.</p>
+            {
+              imageOriginal && (
+                <a href={`${imageOriginal}?download`} download>
+                  Télécharger l’original ↓
+                </a>
+              )
+            }
+          </div>
+        </div>
+
+        <div class="artwork-content">
+          <header>
+            <p class="eyebrow">Œuvre · {work.year || "Date inconnue"}</p>
+            <h1>{title}</h1>
+            {titleOriginal && <p class="original-title">{titleOriginal}</p>}
+          </header>
+
+          {
+            work.description && (
+              <section class="detail-notice" aria-labelledby="notice-title">
+                <p class="eyebrow" id="notice-title">Notice</p>
+                {looksLikeHtml(work.description) ? (
+                  <div class="rich-text" set:html={work.description} />
+                ) : (
+                  <p class="rich-text whitespace-pre-line">{work.description}</p>
+                )}
+              </section>
+            )
+          }
+
+          <dl class="artwork-facts">
+            {
+              work.artist && (
+                <div>
+                  <dt>Artiste</dt>
+                  <dd>
+                    {work.artist.slug ? (
+                      <a href={`/personalites/${work.artist.slug}`}>{work.artist.name}</a>
+                    ) : (
+                      work.artist.name
+                    )}
+                  </dd>
+                </div>
+              )
+            }
+            {work.year && <div><dt>Année</dt><dd>{work.year}</dd></div>}
+            {(work.year_depicted || work.depicted_year) && (
+              <div><dt>Époque représentée</dt><dd>{work.year_depicted || work.depicted_year}</dd></div>
+            )}
+            {work.technique && <div><dt>Technique</dt><dd>{work.technique}</dd></div>}
+            {work.dimensions && <div><dt>Dimensions</dt><dd>{work.dimensions}</dd></div>}
+            {locationLines.length > 0 && (
+              <div><dt>Conservation</dt><dd>{locationLines.join(", ")}</dd></div>
+            )}
+          </dl>
+
+          {
+            depicted.length > 0 && (
+              <section class="detail-related">
+                <p class="eyebrow">Figures représentées</p>
+                <ul>
+                  {depicted.map((person: any) => (
+                    <li>
+                      <a href={person.slug ? `/personalites/${person.slug}` : "/personalites"}>
+                        {person.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          }
+
+          {
+            tags.length > 0 && (
+              <section class="detail-related">
+                <p class="eyebrow">Dans la collection</p>
+                <ul>
+                  {tags.map((tag: string) => (
+                    <li><a href={`/oeuvres?tags=${encodeURIComponent(tag)}`}>{tag}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )
+          }
+        </div>
+      </article>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    padding: clamp(2rem, 4vw, 3.5rem) 0 clamp(5rem, 9vw, 8rem);
+  }
+
+  .detail-back {
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .artwork-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1.18fr) minmax(20rem, 0.82fr);
+    gap: clamp(3rem, 7vw, 7rem);
+    align-items: start;
+    margin-top: 2.2rem;
+  }
+
+  .artwork-visual {
+    position: sticky;
+    top: 6.5rem;
+  }
+
+  figure {
+    display: grid;
+    min-height: 34rem;
+    place-items: center;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+
+  figure img {
+    width: 100%;
+    max-height: calc(100dvh - 10rem);
+    cursor: zoom-in;
+    object-fit: contain;
+  }
+
+  .artwork-missing {
+    display: grid;
+    min-height: 34rem;
+    place-items: center;
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .artwork-missing :global(svg) {
+    width: 5rem;
+    opacity: 0.45;
+  }
+
+  .visual-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.62rem;
+  }
+
+  .visual-actions a {
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .artwork-content {
+    padding-top: clamp(1rem, 6vw, 5rem);
+  }
+
+  .artwork-content h1 {
+    margin-top: 0.85rem;
+    font-size: clamp(3rem, 5.5vw, 5.7rem);
+  }
+
+  .original-title {
+    margin-top: 1rem;
+    color: var(--text-subtle);
+    font-size: 1rem;
+    font-style: italic;
+  }
+
+  .detail-notice {
+    margin-top: 2.6rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .detail-notice .rich-text {
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-size: 1rem;
+  }
+
+  .artwork-facts {
+    margin-top: 2.4rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .artwork-facts > div {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 1.2rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .artwork-facts dt {
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.62rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .artwork-facts dd {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+  }
+
+  .artwork-facts a {
+    color: var(--text);
+    text-decoration-color: var(--gold);
+    text-underline-offset: 0.25em;
+  }
+
+  .detail-related {
+    margin-top: 2rem;
+  }
+
+  .detail-related ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.7rem;
+  }
+
+  .detail-related a {
+    display: inline-flex;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-muted);
+    font-family: var(--type-ui);
+    font-size: 0.66rem;
+    text-decoration: none;
+  }
+
+  .detail-related a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  @media (max-width: 850px) {
+    .artwork-detail {
+      grid-template-columns: 1fr;
+    }
+
+    .artwork-visual {
+      position: static;
+    }
+
+    .artwork-content {
+      padding-top: 0;
+    }
+  }
+</style>

@@ -1,0 +1,16 @@
+---
+import { fetchAllFromDirectus } from "../../../lib/directus";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const people = await fetchAllFromDirectus<any>(
+    "artists?filter[status][_eq]=published&fields=slug&sort=name",
+  );
+  return people
+    .filter((person) => person?.slug)
+    .map((person) => ({ params: { slug: String(person.slug) } }));
+}
+
+return Astro.redirect(`/personalites/${Astro.params.slug ?? ""}`, 301);
+---

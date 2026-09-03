@@ -1,0 +1,36 @@
+{
+  "name": "literae",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Atelier catholique francophone pour lire, contempler et prier.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "npm run check:static && astro build",
+    "check": "npm run check:types && npm run check:static",
+    "check:types": "astro sync && tsc --noEmit",
+    "check:static": "node scripts/check-static-boundary.mjs",
+    "preview": "astro preview",
+    "start": "node dist/server/entry.mjs",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.1.4",
+    "@astrojs/svelte": "9.0.1",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.2.9",
+    "better-sqlite3": "13.0.3",
+    "svelte": "5.57.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true
+  }
+}

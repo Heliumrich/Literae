@@ -1,0 +1,288 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ArtworkCard from "../../components/ArtworkCard.astro";
+import Fleur from "../../components/Fleur.astro";
+import {
+  fetchAllFromDirectus,
+  fetchArtistsList,
+  fileIdOf,
+  getAssetURL,
+  getArtworkTitle,
+} from "../../lib/directus";
+
+const people = await fetchArtistsList();
+const artworks = await fetchAllFromDirectus<any>(
+  "artworks?filter[status][_eq]=published&fields=id,slug,title_french,title_original,title_english,year,image,tags,artist.name,artist.slug&sort=-date_created",
+);
+const featured = artworks.find((work) => fileIdOf(work.image));
+const latest = artworks.filter((work) => work.id !== featured?.id).slice(0, 8);
+const featuredImage = featured
+  ? getAssetURL(fileIdOf(featured.image), "large")
+  : null;
+---
+
+<BaseLayout gallery title="Contempler" description="Le cabinet d’art chrétien de Literae">
+  <main>
+    <section class="art-hero">
+      <div class="page-wrap art-hero-grid">
+        <div class="art-hero-copy">
+          <p class="eyebrow">Contempler · Le cabinet d’images</p>
+          <h1>Le beau comme seuil du mystère.</h1>
+          <p>
+            Une collection d’œuvres chrétiennes à regarder lentement, accompagnées
+            de leurs artistes, de leur histoire et des figures qu’elles représentent.
+          </p>
+          <a href="/oeuvres" class="editorial-button">Parcourir les œuvres <span aria-hidden="true">→</span></a>
+        </div>
+
+        <div class="art-hero-image">
+          {
+            featuredImage && featured ? (
+              <a href={`/oeuvres/${featured.slug}`}>
+                <img
+                  src={featuredImage}
+                  alt={getArtworkTitle(featured)}
+                  width="800"
+                  height="980"
+                  loading="eager"
+                  fetchpriority="high"
+                />
+                <span>
+                  {getArtworkTitle(featured)}
+                  {featured.year ? ` · ${featured.year}` : ""}
+                </span>
+              </a>
+            ) : (
+              <Fleur class="text-gold" />
+            )
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="page-wrap art-gateways" aria-label="Explorer le cabinet">
+      <a href="/oeuvres">
+        <p class="eyebrow">La collection</p>
+        <h2>Œuvres</h2>
+        <p>Tableaux, fresques et sculptures</p>
+        <span>{artworks.length} <small>{artworks.length > 1 ? "œuvres" : "œuvre"}</small></span>
+      </a>
+      <a href="/personalites">
+        <p class="eyebrow">Les vies</p>
+        <h2>Personnalités</h2>
+        <p>Artistes, saints, souverains et écrivains</p>
+        <span>{people.length} <small>{people.length > 1 ? "notices" : "notice"}</small></span>
+      </a>
+    </section>
+
+    {
+      latest.length > 0 && (
+        <section class="art-latest" aria-labelledby="latest-title">
+          <div class="page-wrap">
+            <div class="art-section-head">
+              <div>
+                <p class="eyebrow">Nouveaux regards</p>
+                <h2 id="latest-title">Dernières œuvres déposées</h2>
+              </div>
+              <a href="/oeuvres" class="editorial-link">Voir toute la collection →</a>
+            </div>
+            <div class="catalog-grid">
+              {latest.map((work, index) => <ArtworkCard work={work} index={index} />)}
+            </div>
+          </div>
+        </section>
+      )
+    }
+  </main>
+</BaseLayout>
+
+<style>
+  .art-hero {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .art-hero-grid {
+    display: grid;
+    min-height: min(46rem, calc(100dvh - 4.75rem));
+    grid-template-columns: minmax(0, 0.92fr) minmax(20rem, 1.08fr);
+    align-items: stretch;
+  }
+
+  .art-hero-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(4rem, 8vw, 7rem) clamp(2.5rem, 7vw, 7rem) clamp(4rem, 8vw, 7rem) 0;
+  }
+
+  .art-hero h1 {
+    max-width: 9ch;
+    margin-top: 1rem;
+    font-size: clamp(3.7rem, 7vw, 6.8rem);
+  }
+
+  .art-hero-copy > p:not(.eyebrow) {
+    max-width: 32rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: 1.16rem;
+  }
+
+  .art-hero-copy .editorial-button {
+    align-self: flex-start;
+    margin-top: 2.2rem;
+  }
+
+  .art-hero-image {
+    position: relative;
+    display: grid;
+    min-height: 36rem;
+    margin-right: calc((100vw - min(100vw - 2rem, 76rem)) / -2);
+    place-items: center;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+
+  .art-hero-image > a {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .art-hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.86);
+  }
+
+  .art-hero-image > :global(svg) {
+    width: 7rem;
+    opacity: 0.45;
+  }
+
+  .art-hero-image span {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 1.4rem;
+    left: 1.5rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(255, 250, 240, 0.65);
+    color: #fffaf0;
+    font-family: var(--type-ui);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+  }
+
+  .art-gateways {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-top: clamp(4rem, 7vw, 6rem);
+    padding-bottom: clamp(4rem, 7vw, 6rem);
+  }
+
+  .art-gateways > a {
+    position: relative;
+    padding: 2.5rem 3rem 2.5rem 0;
+    border-block: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .art-gateways > a + a {
+    padding-right: 0;
+    padding-left: 3rem;
+    border-left: 1px solid var(--border);
+  }
+
+  .art-gateways h2 {
+    margin-top: 0.5rem;
+    font-size: clamp(2.8rem, 5vw, 4.8rem);
+    line-height: 0.9;
+  }
+
+  .art-gateways a > p:not(.eyebrow) {
+    margin-top: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .art-gateways a > span {
+    position: absolute;
+    top: 2.2rem;
+    right: 2.2rem;
+    color: var(--gold);
+    font-family: var(--type-display);
+    font-size: 2.1rem;
+  }
+
+  .art-gateways small {
+    font-family: var(--type-ui);
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .art-latest {
+    padding: clamp(4rem, 8vw, 7rem) 0;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 50%, var(--bg));
+  }
+
+  .art-section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .art-section-head h2 {
+    margin-top: 0.6rem;
+    font-size: clamp(2.6rem, 5vw, 4.5rem);
+    line-height: 0.95;
+  }
+
+  @media (max-width: 800px) {
+    .art-hero-grid {
+      width: 100%;
+      grid-template-columns: 1fr;
+    }
+
+    .art-hero-copy {
+      width: min(100% - 2rem, 46rem);
+      margin-inline: auto;
+      padding-right: 0;
+    }
+
+    .art-hero-image {
+      min-height: 32rem;
+      margin: 0;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .art-gateways {
+      grid-template-columns: 1fr;
+    }
+
+    .art-gateways > a,
+    .art-gateways > a + a {
+      padding: 2rem 0;
+      border-left: 0;
+    }
+
+    .art-gateways > a + a {
+      border-top: 0;
+    }
+
+    .art-gateways a > span {
+      top: 1.7rem;
+      right: 0;
+    }
+
+    .art-section-head {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+</style>

@@ -1,0 +1,70 @@
+---
+interface Props {
+  tags: string[];
+  searchPlaceholder?: string;
+  showView?: boolean;
+}
+const { tags, searchPlaceholder = "Rechercher…", showView = false } = Astro.props;
+---
+
+<div class="catalog-toolbar">
+  <label class="catalog-search">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="6.5"></circle>
+      <path d="m15.5 15.5 5 5"></path>
+    </svg>
+    <span class="sr-only">Recherche</span>
+    <input
+      id="catalog-search"
+      type="search"
+      placeholder={searchPlaceholder}
+      autocomplete="off"
+    />
+  </label>
+
+  {
+    showView && (
+      <div class="catalog-view" role="group" aria-label="Mode d’affichage">
+        <button type="button" data-view="grid" class="view-btn is-active" aria-pressed="true">Grille</button>
+        <button type="button" data-view="list" class="view-btn" aria-pressed="false">Liste</button>
+      </div>
+    )
+  }
+
+  {
+    tags.length > 0 && (
+      <div class="catalog-tags" id="tag-dropdown">
+        <button
+          type="button"
+          id="tag-toggle"
+          class="catalog-filter-button"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="tag-panel"
+        >
+          Filtrer
+          <span id="tag-count" class="hidden">0</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="tag-panel" class="catalog-tag-panel hidden" role="group" aria-label="Filtres par étiquette">
+          <div class="catalog-tag-head">
+            <p class="eyebrow">Étiquettes</p>
+            <div class="catalog-mode" role="group" aria-label="Combinaison des étiquettes">
+              <button type="button" data-mode="and" class="mode-btn is-active" aria-pressed="true">Toutes</button>
+              <button type="button" data-mode="or" class="mode-btn" aria-pressed="false">Au moins une</button>
+            </div>
+            <button type="button" id="tag-clear">Effacer</button>
+          </div>
+          <div class="catalog-tag-list">
+            {tags.map((tag) => (
+              <label>
+                <input type="checkbox" class="tag-filter" value={tag} />
+                <span>{tag}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+</div>

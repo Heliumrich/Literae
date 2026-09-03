@@ -1,0 +1,200 @@
+---
+import Fleur from "./Fleur.astro";
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  note: string;
+  items: string[];
+}
+
+const { eyebrow, title, lead, note, items } = Astro.props;
+---
+
+<main>
+  <section class="placeholder-hero">
+    <div class="page-wrap placeholder-grid">
+      <div class="placeholder-copy">
+        <p class="eyebrow">{eyebrow}</p>
+        <h1>{title}</h1>
+        <p class="placeholder-lead">{lead}</p>
+        <div class="placeholder-status">
+          <span aria-hidden="true"></span>
+          <p>{note}</p>
+        </div>
+      </div>
+
+      <div class="placeholder-mark" aria-hidden="true">
+        <div class="mark-ring">
+          <Fleur class="text-gold" />
+        </div>
+        <p>En préparation</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-wrap placeholder-scope" aria-labelledby="scope-title">
+    <div>
+      <p class="eyebrow">Intention</p>
+      <h2 id="scope-title">Ce que cet espace accueillera</h2>
+    </div>
+    <ol>
+      {items.map((item, index) => (
+        <li>
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <p>{item}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+</main>
+
+<style>
+  .placeholder-hero {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .placeholder-grid {
+    display: grid;
+    min-height: min(43rem, calc(100dvh - 4.75rem));
+    grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    align-items: center;
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+
+  .placeholder-copy h1 {
+    max-width: 11ch;
+    margin-top: 1rem;
+  }
+
+  .placeholder-lead {
+    max-width: 39rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: clamp(1.15rem, 2vw, 1.42rem);
+    line-height: 1.6;
+  }
+
+  .placeholder-status {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 2.2rem;
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.74rem;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+  }
+
+  .placeholder-status span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 5px color-mix(in oklab, var(--accent) 12%, transparent);
+  }
+
+  .placeholder-mark {
+    display: grid;
+    justify-items: center;
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .mark-ring {
+    position: relative;
+    display: grid;
+    width: min(22rem, 80vw);
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+
+  .mark-ring::before,
+  .mark-ring::after {
+    position: absolute;
+    width: min(19rem, 69vw);
+    aspect-ratio: 1;
+    border: 1px solid color-mix(in oklab, var(--gold) 22%, transparent);
+    border-radius: inherit;
+    content: "";
+  }
+
+  .mark-ring::after {
+    width: min(15rem, 55vw);
+  }
+
+  .mark-ring :global(svg) {
+    width: 5.5rem;
+    opacity: 0.55;
+  }
+
+  .placeholder-mark > p {
+    margin-top: 1.2rem;
+  }
+
+  .placeholder-scope {
+    display: grid;
+    grid-template-columns: minmax(15rem, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    padding-top: clamp(4rem, 8vw, 7rem);
+    padding-bottom: clamp(4rem, 8vw, 7rem);
+  }
+
+  .placeholder-scope h2 {
+    max-width: 10ch;
+    margin-top: 0.8rem;
+    font-size: clamp(2.3rem, 4vw, 3.8rem);
+    line-height: 0.98;
+  }
+
+  .placeholder-scope ol {
+    border-top: 1px solid var(--border);
+  }
+
+  .placeholder-scope li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 1.25rem;
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .placeholder-scope li span {
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.67rem;
+    letter-spacing: 0.1em;
+  }
+
+  .placeholder-scope li p {
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 760px) {
+    .placeholder-grid,
+    .placeholder-scope {
+      grid-template-columns: 1fr;
+    }
+
+    .placeholder-grid {
+      gap: 4rem;
+    }
+
+    .placeholder-mark {
+      grid-row: 1;
+    }
+
+    .placeholder-copy {
+      grid-row: 2;
+    }
+  }
+</style>

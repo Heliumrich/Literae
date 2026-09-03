@@ -1,0 +1,63 @@
+---
+import Fleur from "./Fleur.astro";
+
+interface Props {
+  src: string | null;
+  alt: string;
+  loading?: "eager" | "lazy";
+  fetchpriority?: "high" | "low" | "auto";
+  zoom?: boolean;
+  class?: string;
+  [key: string]: unknown;
+}
+
+const {
+  src,
+  alt,
+  loading = "lazy",
+  fetchpriority = "low",
+  zoom = false,
+  class: className,
+  ...rest
+} = Astro.props;
+---
+
+<div class="thumb-slot">
+  {
+    src ? (
+      <>
+        <span class="thumb-ph" aria-hidden="true">
+          <Fleur class="size-10 opacity-40" />
+        </span>
+        <img
+          src={src}
+          alt={alt}
+          width={400}
+          height={400}
+          class:list={["thumb-img", className]}
+          decoding="async"
+          loading={loading}
+          fetchpriority={fetchpriority}
+        />
+        {zoom && (
+          <button
+            type="button"
+            class="thumb-zoom"
+            aria-label={`Agrandir : ${alt}`}
+            {...rest}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5"></circle>
+              <path d="M15.5 15.5 21 21"></path>
+            </svg>
+          </button>
+        )}
+      </>
+    ) : (
+      <span class="thumb-empty">
+        <Fleur class="size-10 opacity-40" />
+        <span>Pas d’image</span>
+      </span>
+    )
+  }
+</div>

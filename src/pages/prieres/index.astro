@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import CatalogToolbar from "../../components/CatalogToolbar.astro";
+import CollectionHeader from "../../components/CollectionHeader.astro";
+import { fetchAllFromDirectus } from "../../lib/directus";
+import { parseTags } from "../../lib/catalog";
+import { prayerTitle, firstSentence, type Prayer } from "../../lib/prayer";
+
+export const prerender = true;
+
+const prayers = await fetchAllFromDirectus<Prayer>(
+  "prayers?filter[status][_eq]=published&fields=id,slug,sort,title_latin,title_french,description,tags&sort=sort,title_french",
+);
+const allTags = [...new Set(prayers.flatMap((prayer) => parseTags(prayer.tags)))].sort((a, b) =>
+  a.localeCompare(b, "fr"),
+);
+const first = prayers.slice(0, 20);
+---
+
+<BaseLayout title="Prières" description="Mémento de prières en français et en latin">
+  <main>
+    <div class="page-wrap">
+      <CollectionHeader
+        eyebrow="Prier · Le mémento"
+        title="Les prières"
+        lead="Les mots transmis par l’Église, disposés sobrement en français et en latin pour la lecture, l’apprentissage et le recueillement."
+        count={prayers.length}
+        countLabel={prayers.length > 1 ? "prières" : "prière"}
+      />
+    </div>
+
+    <section class="catalog-section" aria-label="Mémento de prières">
+      <div class="page-wrap">
+        <CatalogToolbar showView tags={allTags} searchPlaceholder="Rechercher une prière ou quelques mots…" />
+        <p id="catalog-status" class="catalog-status" aria-live="polite"></p>
+        <p id="catalog-empty" class="catalog-empty hidden">
+          Aucune prière ne correspond.
+        </p>
+
+        <div id="catalog-grid" class="prayer-list is-grid" data-ssr="1">
+          {
+            first.length === 0 ? (
+              <p class="catalog-empty">Aucune prière publiée pour le moment.</p>
+            ) : (
+              first.map((prayer, index) => {
+                const excerpt = firstSentence(prayer.description);
+                return (
+                  <article class="prayer-card">
+                    <p class="prayer-number">{String(index + 1).padStart(2, "0")}</p>
+                    <a href={`/prieres/${prayer.slug}`}>
+                      <h2>{prayerTitle(prayer)}</h2>
+                      {prayer.title_latin && prayer.title_latin !== prayer.title_french && (
+                        <p class="prayer-latin">{prayer.title_latin}</p>
+                      )}
+                    </a>
+                    {excerpt && <p class="prayer-excerpt">{excerpt}</p>}
+                  </article>
+                );
+              })
+            )
+          }
+        </div>
+
+        <nav id="catalog-pager" class="catalog-pager" aria-label="Pagination"></nav>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { initPrayerList } from "../../lib/prayer-client";
+  initPrayerList("/prieres.json");
+</script>

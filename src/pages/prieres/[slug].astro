@@ -1,0 +1,356 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { fetchAllFromDirectus } from "../../lib/directus";
+import { parseTags } from "../../lib/catalog";
+import {
+  prayerStanzas,
+  prayerTitle,
+  renderMarkdown,
+  type Prayer,
+} from "../../lib/prayer";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const prayers = await fetchAllFromDirectus<Prayer>(
+    "prayers?filter[status][_eq]=published&fields=id,slug,sort,title_latin,title_french,text_latin,text_french,description,tags&sort=sort,title_french",
+  );
+  return prayers
+    .filter((prayer) => prayer?.slug)
+    .map((prayer) => ({
+      params: { slug: String(prayer.slug) },
+      props: { prayer },
+    }));
+}
+
+const { prayer } = Astro.props as { prayer: Prayer };
+const title = prayerTitle(prayer);
+const tags = parseTags(prayer.tags);
+const french = prayerStanzas(prayer.text_french);
+const latin = prayerStanzas(prayer.text_latin);
+const hasFrench = french.length > 0;
+const hasLatin = latin.length > 0;
+const initialMode = hasFrench && hasLatin ? "both" : hasFrench ? "fr" : "la";
+---
+
+<BaseLayout title={title} description={prayer.description?.slice(0, 160) || title}>
+  <main>
+    <div class="page-wrap">
+      <a href="/prieres" class="detail-back">← Toutes les prières</a>
+
+      <header class="prayer-header">
+        <p class="eyebrow">Prier · Le mémento</p>
+        <h1>{title}</h1>
+        {
+          prayer.title_latin && prayer.title_latin !== title && (
+            <p class="prayer-title-latin">{prayer.title_latin}</p>
+          )
+        }
+        {
+          prayer.description && (
+            <div class="prayer-description" set:html={renderMarkdown(prayer.description)} />
+          )
+        }
+        {
+          tags.length > 0 && (
+            <ul class="prayer-tags">
+              {tags.map((tag) => (
+                <li><a href={`/prieres?tags=${encodeURIComponent(tag)}`}>{tag}</a></li>
+              ))}
+            </ul>
+          )
+        }
+      </header>
+    </div>
+
+    {
+      (hasFrench || hasLatin) && (
+        <section class="prayer-reading" aria-label="Texte de la prière">
+          <div class="page-wrap">
+            <div class="language-bar">
+              <p class="eyebrow">Texte</p>
+              <div role="group" aria-label="Langues affichées">
+                {hasFrench && (
+                  <button
+                    type="button"
+                    data-lang="fr"
+                    class:list={["lang-btn", initialMode === "fr" && "is-active"]}
+                    aria-pressed={initialMode === "fr"}
+                  >
+                    Français
+                  </button>
+                )}
+                {hasLatin && (
+                  <button
+                    type="button"
+                    data-lang="la"
+                    class:list={["lang-btn", initialMode === "la" && "is-active"]}
+                    aria-pressed={initialMode === "la"}
+                  >
+                    Latin
+                  </button>
+                )}
+                {hasFrench && hasLatin && (
+                  <button
+                    type="button"
+                    data-lang="both"
+                    class:list={["lang-btn", initialMode === "both" && "is-active"]}
+                    aria-pressed={initialMode === "both"}
+                  >
+                    En regard
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div
+              id="prayer-texts"
+              class:list={["prayer-pages", initialMode === "both" && "is-both"]}
+              data-mode={initialMode}
+            >
+              {hasFrench && (
+                <section data-col="fr" class="prayer-page">
+                  <header>
+                    <p>Version française</p>
+                    <h2>{title}</h2>
+                  </header>
+                  <div class="prayer-stanzas">
+                    {french.map((stanza) => (
+                      <p>
+                        {stanza.map((line, index) => (
+                          <>
+                            {line}
+                            {index < stanza.length - 1 && <br />}
+                          </>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {hasLatin && (
+                <section data-col="la" class="prayer-page">
+                  <header>
+                    <p>Textus latinus</p>
+                    <h2>{prayer.title_latin || title}</h2>
+                  </header>
+                  <div class="prayer-stanzas">
+                    {latin.map((stanza) => (
+                      <p>
+                        {stanza.map((line, index) => (
+                          <>
+                            {line}
+                            {index < stanza.length - 1 && <br />}
+                          </>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          </div>
+        </section>
+      )
+    }
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    padding-top: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .detail-back {
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .prayer-header {
+    max-width: 54rem;
+    padding: clamp(4rem, 8vw, 7rem) 0 clamp(4rem, 7vw, 6rem);
+  }
+
+  .prayer-header h1 {
+    margin-top: 0.8rem;
+  }
+
+  .prayer-title-latin {
+    margin-top: 1rem;
+    color: var(--gold);
+    font-family: var(--type-display);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-style: italic;
+  }
+
+  .prayer-description {
+    max-width: 44rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: 1.08rem;
+  }
+
+  .prayer-description :global(p + p) {
+    margin-top: 0.8rem;
+  }
+
+  .prayer-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 2rem;
+  }
+
+  .prayer-tags a {
+    display: inline-flex;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-muted);
+    font-family: var(--type-ui);
+    font-size: 0.64rem;
+    text-decoration: none;
+  }
+
+  .prayer-reading {
+    padding: 2rem 0 clamp(5rem, 9vw, 8rem);
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 52%, var(--bg));
+  }
+
+  .language-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--text);
+  }
+
+  .language-bar > div {
+    display: flex;
+    border: 1px solid var(--border);
+  }
+
+  .lang-btn {
+    padding: 0.48rem 0.8rem;
+    border-right: 1px solid var(--border);
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .lang-btn:last-child {
+    border-right: 0;
+  }
+
+  .lang-btn.is-active {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .prayer-pages {
+    display: grid;
+    grid-template-columns: minmax(0, 48rem);
+    justify-content: center;
+    margin-top: 2rem;
+  }
+
+  .prayer-pages.is-both {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    border: 1px solid var(--border);
+    background: var(--border);
+  }
+
+  .prayer-page {
+    min-width: 0;
+    padding: clamp(2rem, 5vw, 4rem);
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  .prayer-pages.is-both .prayer-page {
+    border: 0;
+  }
+
+  .prayer-page header {
+    padding-bottom: 1.3rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prayer-page header p {
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .prayer-page h2 {
+    margin-top: 0.45rem;
+    font-family: var(--type-display);
+    font-size: clamp(1.8rem, 3vw, 2.7rem);
+    line-height: 1;
+  }
+
+  .prayer-stanzas {
+    margin-top: 2rem;
+    font-size: clamp(1.08rem, 1.8vw, 1.27rem);
+    line-height: 1.75;
+  }
+
+  .prayer-stanzas p + p {
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 720px) {
+    .language-bar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .prayer-pages.is-both {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const root = document.getElementById("prayer-texts");
+  const buttons = document.querySelectorAll<HTMLButtonElement>(".lang-btn");
+  const french = document.querySelector<HTMLElement>('[data-col="fr"]');
+  const latin = document.querySelector<HTMLElement>('[data-col="la"]');
+
+  if (root && buttons.length) {
+    function apply(mode: string) {
+      const hasFrench = Boolean(french);
+      const hasLatin = Boolean(latin);
+      if (mode === "both" && !(hasFrench && hasLatin)) mode = hasFrench ? "fr" : "la";
+      if (mode === "fr" && !hasFrench) mode = "la";
+      if (mode === "la" && !hasLatin) mode = "fr";
+
+      buttons.forEach((button) => {
+        const active = button.dataset.lang === mode;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      french?.classList.toggle("hidden", mode === "la");
+      latin?.classList.toggle("hidden", mode === "fr");
+      root.classList.toggle("is-both", mode === "both");
+      localStorage.setItem("prayer-lang", mode);
+    }
+
+    const saved = localStorage.getItem("prayer-lang");
+    apply(saved || root.dataset.mode || "both");
+    buttons.forEach((button) =>
+      button.addEventListener("click", () => apply(button.dataset.lang || "fr")),
+    );
+  }
+</script>

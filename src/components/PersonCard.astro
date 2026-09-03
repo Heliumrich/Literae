@@ -1,0 +1,36 @@
+---
+import Thumb from "./Thumb.astro";
+import { fileIdOf, getAssetURL } from "../lib/directus";
+import { formatPersonRoles, parsePersonTypes } from "../lib/people";
+
+interface Props {
+  person: any;
+  index?: number;
+  basePath?: string;
+}
+
+const { person, index = 99, basePath = "/personalites" } = Astro.props;
+const src = getAssetURL(fileIdOf(person.photo), "thumbnail");
+const role = formatPersonRoles(parsePersonTypes(person.type));
+---
+
+<article class="person-card catalog-card group">
+  <a href={`${basePath}/${person.slug}`} class="block">
+    <Thumb
+      src={src}
+      alt={person.name}
+      loading={index < 8 ? "eager" : "lazy"}
+      fetchpriority={index < 8 ? "high" : "low"}
+    />
+    <div class="catalog-card-copy">
+      {role && <p class="card-kicker">{role}</p>}
+      <h2>{person.name}</h2>
+      {(person.birth_year || person.death_year) && (
+        <p>{[person.birth_year || "?", person.death_year || ""].join(" – ")}</p>
+      )}
+      {person.short_description && (
+        <p class="card-description">{person.short_description}</p>
+      )}
+    </div>
+  </a>
+</article>

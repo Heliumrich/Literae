@@ -1,0 +1,23 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PlaceholderPage from "../../components/PlaceholderPage.astro";
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Bibliothèque"
+  description="La future bibliothèque de Literae, consacrée aux textes anciens et aux ouvrages choisis."
+>
+  <PlaceholderPage
+    eyebrow="Lire · Libri"
+    title="La bibliothèque"
+    lead="Un fonds choisi prolongera le comparateur : éditions anciennes, textes libres de droits et volumes préparés pour une lecture attentive."
+    note="Architecture éditoriale à définir"
+    items={[
+      "Des textes intégraux lisibles dans une composition sobre, durable et confortable.",
+      "Des notices pour situer chaque ouvrage, son édition, son auteur et sa transmission.",
+      "Des liens avec les passages bibliques, personnalités, œuvres et prières de Literae.",
+    ]}
+  />
+</BaseLayout>

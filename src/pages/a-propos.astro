@@ -1,0 +1,352 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Fleur from "../components/Fleur.astro";
+import { ART_BASE } from "../lib/site-links";
+
+export const prerender = true;
+
+const gestures = [
+  {
+    number: "I",
+    title: "Lire",
+    text: "Mettre les traductions en regard, donner leur contexte et laisser apparaître les nuances de la lettre.",
+    href: "/scriptorium",
+  },
+  {
+    number: "II",
+    title: "Contempler",
+    text: "Présenter l’art chrétien comme une exposition reliée aux artistes, aux figures et à leur histoire.",
+    href: `${ART_BASE}/`,
+  },
+  {
+    number: "III",
+    title: "Prier",
+    text: "Rassembler des prières en français et en latin dans une forme propice à la lecture et à la mémorisation.",
+    href: "/prieres",
+  },
+];
+---
+
+<BaseLayout
+  title="À propos"
+  description="Literae est un atelier catholique francophone consacré à la lecture de l’Écriture, à l’art chrétien et à la prière."
+>
+  <main>
+    <section class="about-hero">
+      <div class="page-wrap about-hero-grid">
+        <div>
+          <p class="eyebrow">À propos · Colophon</p>
+          <h1>Un atelier pour lire, contempler et prier.</h1>
+          <p class="about-lead">
+            Literae est un projet catholique francophone indépendant. Il réunit des
+            textes, des images et des outils de lecture dans un même espace calme,
+            attentif à la transmission autant qu’à l’usage présent.
+          </p>
+        </div>
+        <aside class="motto" aria-label="Devise de Literae">
+          <Fleur class="motto-fleur" />
+          <blockquote>
+            <p lang="la">Tolle, lege.</p>
+            <footer>Prends et lis.</footer>
+          </blockquote>
+        </aside>
+      </div>
+    </section>
+
+    <section class="page-wrap intent-section" aria-labelledby="intent-title">
+      <header>
+        <p class="eyebrow">L’intention</p>
+        <h2 id="intent-title">Faire place à une attention lente.</h2>
+      </header>
+      <div class="intent-copy">
+        <p class="drop-cap">
+          Le site n’est ni une encyclopédie exhaustive, ni une succession de contenus.
+          Il se construit comme un livre vivant : chaque œuvre, chaque traduction et
+          chaque prière doit pouvoir être rencontrée pour elle-même, puis reliée au reste.
+        </p>
+        <p>
+          La technique reste volontairement en retrait. Elle sert une lecture lisible,
+          une navigation stable et des ressources qui pourront grandir sans perdre leur
+          hiérarchie.
+        </p>
+      </div>
+    </section>
+
+    <section class="gesture-section" aria-labelledby="gestures-title">
+      <div class="page-wrap">
+        <header class="gesture-heading">
+          <p class="eyebrow">Trois gestes</p>
+          <h2 id="gestures-title">Une même manière d’habiter les textes et les images.</h2>
+        </header>
+        <div class="gesture-register">
+          {gestures.map((gesture) => (
+            <article>
+              <p class="gesture-number" aria-hidden="true">{gesture.number}</p>
+              <div>
+                <h3>{gesture.title}</h3>
+                <p>{gesture.text}</p>
+                <a href={gesture.href} class="editorial-link">
+                  Entrer <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="page-wrap colophon-section" aria-labelledby="colophon-title">
+      <div>
+        <p class="eyebrow">Le projet</p>
+        <h2 id="colophon-title">Un chantier ouvert, par strates.</h2>
+      </div>
+      <dl>
+        <div>
+          <dt>Contenus</dt>
+          <dd>Les œuvres, personnalités et prières sont administrées dans un Directus public.</dd>
+        </div>
+        <div>
+          <dt>Écritures</dt>
+          <dd>Le comparateur s’appuie sur une base SQLite appelée à accueillir davantage de versions et de métadonnées.</dd>
+        </div>
+        <div>
+          <dt>Construction</dt>
+          <dd>Le site est généré avec Astro ; Svelte anime uniquement le pupitre de comparaison.</dd>
+        </div>
+        <div>
+          <dt>À venir</dt>
+          <dd>Le calendrier liturgique, la bibliothèque et la musique sacrée disposent de leurs espaces réservés.</dd>
+        </div>
+      </dl>
+      <div class="source-links">
+        <a href="https://github.com/Heliumrich/Literae" class="editorial-link">Code du site</a>
+        <a href="https://github.com/Heliumrich/FR-Bibles_JSON" class="editorial-link">Base biblique</a>
+        <a href="https://api.literae.ch" class="editorial-link">Données éditoriales</a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .about-hero {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .about-hero-grid {
+    display: grid;
+    min-height: min(43rem, calc(100dvh - 4.75rem));
+    grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.55fr);
+    gap: clamp(3rem, 9vw, 9rem);
+    align-items: center;
+    padding-top: clamp(4rem, 8vw, 7rem);
+    padding-bottom: clamp(4rem, 8vw, 7rem);
+  }
+
+  .about-hero h1 {
+    max-width: 11ch;
+    margin-top: 1rem;
+  }
+
+  .about-lead {
+    max-width: 43rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: clamp(1.15rem, 2vw, 1.45rem);
+  }
+
+  .motto {
+    display: grid;
+    min-height: 22rem;
+    place-items: center;
+    align-content: center;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .motto :global(.motto-fleur) {
+    width: 3.5rem;
+    color: var(--gold);
+    opacity: 0.7;
+  }
+
+  .motto blockquote {
+    margin-top: 1.5rem;
+  }
+
+  .motto blockquote p {
+    font-family: var(--type-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-style: italic;
+  }
+
+  .motto blockquote footer {
+    margin-top: 0.35rem;
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.67rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .intent-section {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.78fr) minmax(0, 1.22fr);
+    gap: clamp(3rem, 9vw, 9rem);
+    padding-top: clamp(5rem, 9vw, 8rem);
+    padding-bottom: clamp(5rem, 9vw, 8rem);
+  }
+
+  .intent-section h2,
+  .gesture-heading h2,
+  .colophon-section h2 {
+    max-width: 11ch;
+    margin-top: 0.8rem;
+    font-size: clamp(2.5rem, 4.8vw, 4.5rem);
+    line-height: 0.96;
+  }
+
+  .intent-copy {
+    max-width: 42rem;
+    color: var(--text-muted);
+    font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  }
+
+  .intent-copy p + p {
+    margin-top: 1.5rem;
+  }
+
+  .gesture-section {
+    padding: clamp(5rem, 9vw, 8rem) 0;
+    border-block: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 52%, var(--bg));
+  }
+
+  .gesture-heading {
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.55fr) minmax(0, 1.45fr);
+    gap: 2rem;
+    align-items: end;
+    padding-bottom: 2.5rem;
+  }
+
+  .gesture-heading h2 {
+    max-width: 14ch;
+    margin-top: 0;
+  }
+
+  .gesture-register {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--text);
+  }
+
+  .gesture-register article {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: 0.7rem;
+    padding: 2rem 1.8rem 0 0;
+  }
+
+  .gesture-register article + article {
+    padding-left: 1.8rem;
+    border-left: 1px solid var(--border);
+  }
+
+  .gesture-number {
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+
+  .gesture-register h3 {
+    font-family: var(--type-display);
+    font-size: clamp(2rem, 3.2vw, 3rem);
+    line-height: 1;
+  }
+
+  .gesture-register h3 + p {
+    min-height: 8rem;
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .gesture-register .editorial-link {
+    margin-top: 1rem;
+  }
+
+  .colophon-section {
+    display: grid;
+    grid-template-columns: minmax(15rem, 0.65fr) minmax(0, 1.35fr);
+    gap: clamp(3rem, 9vw, 9rem);
+    padding-top: clamp(5rem, 9vw, 8rem);
+    padding-bottom: clamp(5rem, 9vw, 8rem);
+  }
+
+  .colophon-section dl {
+    border-top: 1px solid var(--text);
+  }
+
+  .colophon-section dl > div {
+    display: grid;
+    grid-template-columns: minmax(6rem, 0.35fr) minmax(0, 1.65fr);
+    gap: 1rem;
+    padding: 1.35rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .colophon-section dt {
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.64rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .colophon-section dd {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .source-links {
+    display: flex;
+    grid-column: 2;
+    flex-wrap: wrap;
+    gap: 1rem 1.8rem;
+  }
+
+  @media (max-width: 780px) {
+    .about-hero-grid,
+    .intent-section,
+    .colophon-section,
+    .gesture-heading {
+      grid-template-columns: 1fr;
+    }
+
+    .motto {
+      width: min(100%, 26rem);
+      min-height: 18rem;
+    }
+
+    .gesture-register {
+      grid-template-columns: 1fr;
+    }
+
+    .gesture-register article,
+    .gesture-register article + article {
+      padding: 1.6rem 0;
+      border-left: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gesture-register h3 + p {
+      min-height: 0;
+    }
+
+    .source-links {
+      grid-column: 1;
+    }
+  }
+</style>

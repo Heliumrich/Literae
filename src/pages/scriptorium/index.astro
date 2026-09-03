@@ -1,0 +1,385 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { TRANSLATION_EDITORIAL_META } from "../../lib/bible-translations";
+
+export const prerender = true;
+
+const editions = Object.entries(TRANSLATION_EDITORIAL_META).map(([code, meta]) => ({
+  code,
+  ...meta,
+}));
+---
+
+<BaseLayout
+  title="Scriptorium"
+  description="Le pupitre de lecture de Literae : comparer les traductions de la Sainte Écriture et préparer une bibliothèque d’ouvrages choisis."
+>
+  <main>
+    <section class="scriptorium-hero">
+      <div class="page-wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Lire · Litterae sacrae</p>
+          <h1>La lettre devient vivante lorsqu’on la lit en regard.</h1>
+          <p class="hero-lead">
+            Le Scriptorium est le pupitre de Literae : un lieu pour ouvrir un même
+            passage dans plusieurs éditions, observer leurs choix et revenir au texte.
+          </p>
+          <div class="hero-actions">
+            <a href="/scriptorium/comparateur" class="editorial-button">
+              Ouvrir le comparateur <span aria-hidden="true">→</span>
+            </a>
+            <a href="#methode" class="editorial-link">Découvrir la méthode</a>
+          </div>
+        </div>
+
+        <div class="open-book" aria-hidden="true">
+          <div class="book-page">
+            <p class="book-edition">Crampon · 1923</p>
+            <p><sup>1</sup> Au commencement était le Verbe, et le Verbe était auprès de Dieu.</p>
+            <p><sup>2</sup> Il était au commencement auprès de Dieu.</p>
+          </div>
+          <div class="book-page">
+            <p class="book-edition">Vulgata · 1592</p>
+            <p><sup>1</sup> In principio erat Verbum, et Verbum erat apud Deum.</p>
+            <p><sup>2</sup> Hoc erat in principio apud Deum.</p>
+          </div>
+          <p class="book-caption">Ioannes · I</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="methode" class="page-wrap method-section" aria-labelledby="method-title">
+      <header>
+        <p class="eyebrow">Le geste de lecture</p>
+        <h2 id="method-title">Comparer sans interrompre la lecture</h2>
+      </header>
+      <ol>
+        <li>
+          <span>01</span>
+          <div>
+            <h3>Choisir le passage</h3>
+            <p>Une référence suffit : chapitre entier, verset isolé ou courte plage.</p>
+          </div>
+        </li>
+        <li>
+          <span>02</span>
+          <div>
+            <h3>Placer les témoins</h3>
+            <p>De une à quatre traductions prennent place sur le même pupitre.</p>
+          </div>
+        </li>
+        <li>
+          <span>03</span>
+          <div>
+            <h3>Lire les nuances</h3>
+            <p>Les versets restent alignés ; les notices donnent le contexte des éditions.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="edition-section" aria-labelledby="editions-title">
+      <div class="page-wrap editions-grid">
+        <header>
+          <p class="eyebrow">Notices préparées</p>
+          <h2 id="editions-title">Quelques témoins, une même Écriture</h2>
+          <p>
+            La liste des versions provient de la base biblique. Ces quelques notices
+            curatoriales restent temporaires et pourront la rejoindre lorsque ses
+            métadonnées seront enrichies.
+          </p>
+        </header>
+
+        <div class="edition-register">
+          {editions.map((edition) => (
+            <article>
+              <p class="edition-code">{edition.code}</p>
+              <div>
+                <h3>{edition.authors_label}</h3>
+                <p>{edition.date_label} · {edition.source_label}</p>
+              </div>
+              <p class="edition-notice">{edition.notice}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="page-wrap library-callout" aria-labelledby="library-title">
+      <div>
+        <p class="eyebrow">Prochain chapitre · Libri</p>
+        <h2 id="library-title">Une bibliothèque viendra prolonger le pupitre.</h2>
+      </div>
+      <div>
+        <p>
+          Traductions anciennes, textes libres de droits et volumes préparés pour une
+          lecture présente formeront, plus tard, un fonds choisi plutôt qu’un entrepôt.
+        </p>
+        <a href="/scriptorium/bibliotheque" class="editorial-link">
+          Voir l’espace réservé <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .scriptorium-hero {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-grid {
+    display: grid;
+    min-height: min(47rem, calc(100dvh - 4.75rem));
+    grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.95fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    align-items: center;
+    padding-top: clamp(4rem, 8vw, 7rem);
+    padding-bottom: clamp(4rem, 8vw, 7rem);
+  }
+
+  .hero-copy h1 {
+    max-width: 12ch;
+    margin-top: 1rem;
+  }
+
+  .hero-lead {
+    max-width: 39rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: clamp(1.12rem, 1.7vw, 1.35rem);
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: center;
+    margin-top: 2.4rem;
+  }
+
+  .open-book {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    padding: 1px;
+    background: var(--border);
+    box-shadow: 0 30px 65px -42px rgba(34, 22, 12, 0.7);
+    transform: rotate(1.2deg);
+  }
+
+  .open-book::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2rem;
+    background: linear-gradient(90deg, transparent, rgba(40, 25, 12, 0.09), transparent);
+    content: "";
+    transform: translateX(-50%);
+  }
+
+  .book-page {
+    min-height: 25rem;
+    padding: clamp(2rem, 4vw, 3.2rem) clamp(1.25rem, 2.8vw, 2.2rem);
+    background: var(--card);
+  }
+
+  .book-edition {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.58rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .book-page > p:not(.book-edition) {
+    margin-top: 1.5rem;
+    font-size: clamp(0.88rem, 1.15vw, 1rem);
+    line-height: 1.75;
+  }
+
+  .book-page sup {
+    margin-right: 0.35rem;
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.55rem;
+  }
+
+  .book-caption {
+    position: absolute;
+    right: 0;
+    bottom: -2rem;
+    color: var(--text-subtle);
+    font-family: var(--type-ui);
+    font-size: 0.6rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .method-section {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    padding-top: clamp(5rem, 9vw, 8rem);
+    padding-bottom: clamp(5rem, 9vw, 8rem);
+  }
+
+  .method-section header {
+    position: sticky;
+    top: 7rem;
+    align-self: start;
+  }
+
+  .method-section h2,
+  .edition-section h2,
+  .library-callout h2 {
+    max-width: 11ch;
+    margin-top: 0.8rem;
+    font-size: clamp(2.5rem, 4.6vw, 4.4rem);
+    line-height: 0.96;
+  }
+
+  .method-section ol {
+    border-top: 1px solid var(--border);
+  }
+
+  .method-section li {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    gap: 1.2rem;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .method-section li > span,
+  .edition-code {
+    color: var(--gold);
+    font-family: var(--type-ui);
+    font-size: 0.63rem;
+    letter-spacing: 0.12em;
+  }
+
+  .method-section h3,
+  .edition-register h3 {
+    font-family: var(--type-display);
+    font-size: clamp(1.55rem, 2.2vw, 2rem);
+    line-height: 1;
+  }
+
+  .method-section li p {
+    max-width: 34rem;
+    margin-top: 0.6rem;
+    color: var(--text-muted);
+  }
+
+  .edition-section {
+    padding: clamp(5rem, 9vw, 8rem) 0;
+    border-block: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 52%, var(--bg));
+  }
+
+  .editions-grid {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.75fr) minmax(0, 1.25fr);
+    gap: clamp(3rem, 8vw, 8rem);
+  }
+
+  .editions-grid > header > p:last-child {
+    max-width: 29rem;
+    margin-top: 1.8rem;
+    color: var(--text-muted);
+  }
+
+  .edition-register {
+    border-top: 1px solid var(--text);
+  }
+
+  .edition-register article {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(9rem, 0.8fr) minmax(12rem, 1.2fr);
+    gap: 1rem;
+    padding: 1.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .edition-register h3 + p,
+  .edition-notice {
+    margin-top: 0.35rem;
+    color: var(--text-subtle);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .edition-notice {
+    margin-top: 0;
+    color: var(--text-muted);
+  }
+
+  .library-callout {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(3rem, 8vw, 8rem);
+    padding-top: clamp(5rem, 9vw, 8rem);
+    padding-bottom: clamp(5rem, 9vw, 8rem);
+  }
+
+  .library-callout > div:last-child {
+    align-self: end;
+  }
+
+  .library-callout > div:last-child p {
+    max-width: 36rem;
+    color: var(--text-muted);
+    font-size: 1.08rem;
+  }
+
+  .library-callout .editorial-link {
+    margin-top: 1.6rem;
+  }
+
+  @media (max-width: 820px) {
+    .hero-grid,
+    .method-section,
+    .editions-grid,
+    .library-callout {
+      grid-template-columns: 1fr;
+    }
+
+    .open-book {
+      width: min(100%, 38rem);
+      margin-inline: auto;
+      transform: none;
+    }
+
+    .method-section header {
+      position: static;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .open-book {
+      grid-template-columns: 1fr;
+    }
+
+    .open-book .book-page:last-of-type,
+    .open-book::after {
+      display: none;
+    }
+
+    .book-page {
+      min-height: 21rem;
+    }
+
+    .edition-register article {
+      grid-template-columns: 2.4rem 1fr;
+    }
+
+    .edition-notice {
+      grid-column: 2;
+    }
+  }
+</style>

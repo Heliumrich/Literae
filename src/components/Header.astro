@@ -1,0 +1,199 @@
+---
+import Fleur from "./Fleur.astro";
+import { ART_BASE, MAIN_BASE } from "../lib/site-links";
+
+const pathname = Astro.url.pathname;
+const isArtHost =
+  Astro.url.hostname === "art.literae.ch" || Astro.url.hostname.startsWith("art.");
+
+const NAV = [
+  {
+    href: `${MAIN_BASE}/scriptorium/comparateur`,
+    label: "Lire",
+    eyebrow: "Les Écritures",
+    match: (p: string) => p.startsWith("/scriptorium") || p.startsWith("/comparateur"),
+  },
+  {
+    href: `${ART_BASE}/`,
+    label: "Contempler",
+    eyebrow: "L’art chrétien",
+    match: (p: string) =>
+      isArtHost ||
+      p === "/art" ||
+      p.startsWith("/art/") ||
+      p.startsWith("/oeuvres") ||
+      p.startsWith("/personalites"),
+  },
+  {
+    href: `${MAIN_BASE}/prieres`,
+    label: "Prier",
+    eyebrow: "Le mémento",
+    match: (p: string) => p.startsWith("/prieres"),
+  },
+  {
+    href: `${MAIN_BASE}/calendrier`,
+    label: "Aujourd’hui",
+    eyebrow: "L’année liturgique",
+    match: (p: string) => p.startsWith("/calendrier"),
+  },
+  {
+    href: `${MAIN_BASE}/musique`,
+    label: "Écouter",
+    eyebrow: "Musique sacrée",
+    match: (p: string) => p.startsWith("/musique"),
+  },
+];
+---
+
+<header class="site-header sticky top-0 z-40 border-b border-border">
+  <div class="page-wrap flex h-[4.75rem] items-center justify-between gap-5">
+    <a href={`${MAIN_BASE}/`} class="brand-mark group flex min-w-0 items-center gap-3 text-fg no-underline">
+      <Fleur class="size-8 shrink-0 text-gold transition-transform duration-300 group-hover:rotate-6" title="Literae" />
+      <span class="min-w-0">
+        <span class="brand-name block text-[1.15rem] leading-none tracking-[0.08em]">Literae</span>
+        <span class="mt-1 hidden text-[0.62rem] uppercase tracking-[0.2em] text-subtle sm:block">
+          Atelier catholique francophone
+        </span>
+      </span>
+    </a>
+
+    <nav class="hidden items-stretch self-stretch lg:flex" aria-label="Navigation principale">
+      {
+        NAV.map((item) => {
+          const active = item.match(pathname);
+          return (
+            <a
+              href={item.href}
+              class:list={["nav-link", active && "is-active"]}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        id="theme-toggle"
+        class="icon-button"
+        aria-label="Activer le thème sombre"
+        title="Changer d’apparence"
+      >
+        <svg class="theme-icon theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.8 15.1A9 9 0 1 1 8.9 3.2a7 7 0 0 0 11.9 11.9Z" /></svg>
+        <svg class="theme-icon theme-icon-sun hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" /></svg>
+      </button>
+
+      <button
+        type="button"
+        id="mobile-nav-btn"
+        class="icon-button lg:hidden"
+        aria-label="Ouvrir le menu"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+      >
+        <svg id="icon-menu" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        <svg id="icon-close" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+  </div>
+
+  <nav id="mobile-nav" class="mobile-nav hidden border-t border-border lg:hidden" aria-label="Navigation mobile">
+    <div class="page-wrap grid gap-px py-3 sm:grid-cols-2">
+      {
+        NAV.map((item) => {
+          const active = item.match(pathname);
+          return (
+            <a
+              href={item.href}
+              class:list={["mobile-nav-link", active && "is-active"]}
+              aria-current={active ? "page" : undefined}
+            >
+              <span>{item.label}</span>
+              <small>{item.eyebrow}</small>
+            </a>
+          );
+        })
+      }
+    </div>
+  </nav>
+</header>
+
+<script>
+  const THEME_KEY = "scriptorium-theme";
+  const root = document.documentElement;
+  const themeButton = document.getElementById("theme-toggle");
+  const moon = themeButton?.querySelector(".theme-icon-moon");
+  const sun = themeButton?.querySelector(".theme-icon-sun");
+
+  function currentTheme() {
+    return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  }
+
+  function renderThemeButton() {
+    const dark = currentTheme() === "dark";
+    moon?.classList.toggle("hidden", dark);
+    sun?.classList.toggle("hidden", !dark);
+    themeButton?.setAttribute("aria-label", dark ? "Activer le thème parchemin" : "Activer le thème sombre");
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
+      "content",
+      dark ? "#12100e" : "#f1eadc",
+    );
+  }
+
+  function applyTheme(theme: "light" | "dark") {
+    root.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+    document.cookie = `${THEME_KEY}=${theme}; path=/; max-age=31536000; SameSite=Lax`;
+    if (location.hostname.endsWith("literae.ch")) {
+      document.cookie = `${THEME_KEY}=${theme}; path=/; max-age=31536000; SameSite=Lax; domain=.literae.ch`;
+    }
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
+      "content",
+      theme === "dark" ? "#12100e" : "#f1eadc",
+    );
+    renderThemeButton();
+  }
+
+  themeButton?.addEventListener("click", () => {
+    applyTheme(currentTheme() === "dark" ? "light" : "dark");
+  });
+  renderThemeButton();
+
+  const mobileButton = document.getElementById("mobile-nav-btn");
+  const mobileNav = document.getElementById("mobile-nav");
+  const menuIcon = document.getElementById("icon-menu");
+  const closeIcon = document.getElementById("icon-close");
+  const mobileLinks = mobileNav?.querySelectorAll<HTMLAnchorElement>("a");
+
+  function closeMobileNav(restoreFocus = false) {
+    mobileNav?.classList.add("hidden");
+    menuIcon?.classList.remove("hidden");
+    closeIcon?.classList.add("hidden");
+    mobileButton?.setAttribute("aria-expanded", "false");
+    mobileButton?.setAttribute("aria-label", "Ouvrir le menu");
+    if (restoreFocus) mobileButton?.focus();
+  }
+
+  mobileButton?.addEventListener("click", () => {
+    const opening = mobileNav?.classList.contains("hidden") ?? false;
+    mobileNav?.classList.toggle("hidden", !opening);
+    menuIcon?.classList.toggle("hidden", opening);
+    closeIcon?.classList.toggle("hidden", !opening);
+    mobileButton.setAttribute("aria-expanded", String(opening));
+    mobileButton.setAttribute("aria-label", opening ? "Fermer le menu" : "Ouvrir le menu");
+    if (opening) mobileLinks?.[0]?.focus();
+  });
+
+  mobileLinks?.forEach((link) => link.addEventListener("click", () => closeMobileNav()));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && mobileNav && !mobileNav.classList.contains("hidden")) {
+      closeMobileNav(true);
+    }
+  });
+  window.matchMedia("(min-width: 1024px)").addEventListener("change", (event) => {
+    if (event.matches) closeMobileNav();
+  });
+</script>

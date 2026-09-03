@@ -1,0 +1,45 @@
+---
+import Thumb from "./Thumb.astro";
+import {
+  fileIdOf,
+  getAssetURL,
+  getArtworkTitle,
+} from "../lib/directus";
+
+interface Props {
+  work: any;
+  index?: number;
+  basePath?: string;
+}
+
+const { work, index = 99, basePath = "/oeuvres" } = Astro.props;
+const id = fileIdOf(work.image);
+const src = getAssetURL(id, "thumbnail");
+const title = getArtworkTitle(work);
+const artistName =
+  work.artist && typeof work.artist === "object" ? work.artist.name : null;
+const href = `${basePath}/${work.slug}`;
+---
+
+<article class="artwork-card catalog-card group">
+  <Thumb
+    src={src}
+    alt={title}
+    loading={index < 8 ? "eager" : "lazy"}
+    fetchpriority={index < 8 ? "high" : "low"}
+    zoom={Boolean(src)}
+    data-lightbox
+    data-alt={title}
+    data-href={href}
+    data-medium={getAssetURL(id, "medium") || ""}
+    data-large={getAssetURL(id, "large") || ""}
+    data-xlarge={getAssetURL(id, "xlarge") || ""}
+    data-original={getAssetURL(id) || ""}
+  />
+  <a href={href} class="catalog-card-copy">
+    <h2>{title}</h2>
+    {(artistName || work.year) && (
+      <p>{[artistName, work.year].filter(Boolean).join(" · ")}</p>
+    )}
+  </a>
+</article>

@@ -1,0 +1,28 @@
+# Dépendances et sorties générées
+node_modules/
+dist/
+.astro/
+coverage/
+
+# Variables locales et secrets
+.env
+.env.*
+!.env.example
+
+# Fichiers temporaires SQLite
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Journaux
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Éditeurs et systèmes
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

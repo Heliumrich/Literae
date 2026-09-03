@@ -1,0 +1,29 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Comparator from "../../components/bible/Comparator.svelte";
+import { getBibleTranslations } from "../../lib/bible-server";
+
+export const prerender = true;
+
+const translations = getBibleTranslations();
+---
+
+<BaseLayout
+  title="Comparateur"
+  description="Collationner les versions françaises de la Sainte Écriture — Crampon, Fillion, Sacy, Segond, Ostervald, Vulgate."
+>
+  <main>
+    <div class="page-wrap">
+      <header class="page-intro">
+        <p class="eyebrow">Lire · Les Écritures</p>
+        <h1 class="mt-3">Le comparateur</h1>
+        <p class="mt-6">
+          Ouvrez plusieurs traductions sur un même pupitre et laissez leurs nuances
+          éclairer le texte, verset après verset.
+        </p>
+      </header>
+      <Comparator client:only="svelte" initialTranslations={translations} />
+    </div>
+    <div class="h-20 sm:h-28"></div>
+  </main>
+</BaseLayout>

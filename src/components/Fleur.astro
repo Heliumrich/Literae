@@ -1,0 +1,26 @@
+---
+interface Props {
+  class?: string;
+  title?: string;
+}
+
+const { class: className = "", title } = Astro.props;
+
+/** Official French heraldic fleur-de-lis path */
+const FLEUR_PATH =
+  "M126,159C135,181 139,209 139,236L132,236C126,187 113,123 61,123C39,123 22,143 22,161C22,190 39,210 74,222C69,207 65,183 80,183C104,183 115,212 115,236L112,236C107,236 104,239 104,244C104,249 108,252 112,252L129,252C121,273 107,281 96,287C113,295 133,287 137,282C136,288 137,304 139,315C140,324 144,329 150,336C156,329 160,324 161,315C163,304 164,288 163,282C167,287 187,295 204,287C193,281 179,273 171,252L188,252C193,252 196,249 196,244C196,239 193,236 188,236L185,236C185,212 196,183 220,183C235,183 231,207 226,222C261,210 278,190 278,161C278,143 261,123 239,123C187,123 174,187 168,236L161,236C161,209 165,181 174,159C204,92 183,47 150,15C117,47 96,92 126,159Z";
+const FLEUR_VIEWBOX = "0 0 3119 3910";
+const FLEUR_TRANSFORM = "matrix(12.178968,0,0,12.178968,-267.790124,-182.684524)";
+---
+
+<svg
+  viewBox={FLEUR_VIEWBOX}
+  class:list={["fill-current", className]}
+  aria-hidden={title ? undefined : "true"}
+  role={title ? "img" : undefined}
+>
+  {title && <title>{title}</title>}
+  <g transform={FLEUR_TRANSFORM}>
+    <path d={FLEUR_PATH} fill-rule="nonzero"></path>
+  </g>
+</svg>

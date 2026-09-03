@@ -1,0 +1,8 @@
+---
+interface Props {
+  class?: string;
+}
+const { class: className = "" } = Astro.props;
+---
+
+<div class:list={["ornament-rule w-full", className]} aria-hidden="true"></div>

@@ -1,0 +1,78 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { ART_ORIGIN, MAIN_ORIGIN } from "../lib/site-links";
+
+interface Props {
+  title?: string;
+  description?: string;
+  gallery?: boolean;
+}
+
+const {
+  title = "Literae",
+  description = "Literae — un lieu pour lire la Sainte Écriture, contempler l’art chrétien, prier avec les mots de l’Église, et marcher au rythme de l’année liturgique.",
+  gallery = false,
+} = Astro.props;
+
+const fullTitle = title === "Literae" ? title : `${title} — Literae`;
+const isArtPath =
+  Astro.url.pathname === "/art" ||
+  Astro.url.pathname.startsWith("/oeuvres") ||
+  Astro.url.pathname.startsWith("/personalites");
+const canonicalPath = Astro.url.pathname === "/art" ? "/" : Astro.url.pathname;
+const canonical = new URL(canonicalPath, `${isArtPath ? ART_ORIGIN : MAIN_ORIGIN}/`).href;
+---
+
+<!doctype html>
+<html lang="fr" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="theme-color" content="#f1eadc" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {gallery && <link rel="preconnect" href="https://api.literae.ch" crossorigin />}
+    <script is:inline>
+      try {
+        var t = localStorage.getItem("scriptorium-theme");
+        if (!t) {
+          var m = document.cookie.match(/(?:^|; )scriptorium-theme=([^;]*)/);
+          t = m ? decodeURIComponent(m[1]) : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="antialiased">
+    <a class="skip-link" href="#main-content">Aller au contenu</a>
+    <div class="flex min-h-dvh flex-col">
+      <Header />
+      <div id="main-content" class="flex-1" tabindex="-1">
+        <slot />
+      </div>
+      <Footer />
+    </div>
+    {
+      gallery && (
+        <script>
+          import { hydrateThumbs } from "../lib/thumbs";
+          import { initLightbox } from "../lib/lightbox";
+          hydrateThumbs();
+          initLightbox();
+        </script>
+      )
+    }
+  </body>
+</html>
