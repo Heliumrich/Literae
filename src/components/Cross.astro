@@ -1,0 +1,26 @@
+---
+interface Props {
+  kind?: "latin" | "malte" | "potent";
+}
+
+const { kind = "latin" } = Astro.props;
+const symbols = {
+  latin: "/latin-cross.svg",
+  malte: "/malte-cross.svg",
+  potent: "/cross-potent.svg",
+};
+---
+
+<span class="cross-mark" style={`--cross-image: url("${symbols[kind]}")`} aria-hidden="true"></span>
+
+<style>
+  .cross-mark {
+    display: inline-block;
+    flex: none;
+    width: 0.9rem;
+    height: 0.9rem;
+    background: currentColor;
+    mask: var(--cross-image) center / contain no-repeat;
+    opacity: 0.7;
+  }
+</style>

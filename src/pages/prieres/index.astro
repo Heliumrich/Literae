@@ -47,7 +47,7 @@ const first = prayers.slice(0, 20);
                 return (
                   <article class="prayer-card">
                     <p class="prayer-number">{String(index + 1).padStart(2, "0")}</p>
-                    <a href={`/prieres/${prayer.slug}`}>
+                    <a class="prayer-card-link" href={`/prieres/${prayer.slug}`}>
                       <h2>{prayerTitle(prayer)}</h2>
                       {prayer.title_latin && prayer.title_latin !== prayer.title_french && (
                         <p class="prayer-latin">{prayer.title_latin}</p>

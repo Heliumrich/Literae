@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Fleur from "../components/Fleur.astro";
+import Cross from "../components/Cross.astro";
 import {
   fetchFromDirectus,
   fileIdOf,
@@ -122,16 +123,16 @@ const gestures = [
     <section class="verse-band" aria-labelledby="verse-heading">
       <div class="page-wrap verse-grid">
         <div>
-          <p class="eyebrow" id="verse-heading">Au seuil du livre</p>
-          <p class="verse-reference">Jean 1, 1</p>
+          <p class="eyebrow verse-eyebrow" id="verse-heading"><Cross kind="latin" /> Au seuil du livre</p>
+          <p class="verse-reference">Jean 3, 16</p>
         </div>
         <blockquote>
-          « Au commencement était le Verbe, et le Verbe était auprès de Dieu,
-          et le Verbe était Dieu. »
+          « En effet, Dieu a tellement aimé le monde, qu’il a donné son Fils unique,
+          afin que quiconque croit en lui ne périsse point mais ait la vie éternelle. »
         </blockquote>
         <div class="verse-source">
           <span>Bible Crampon · 1923</span>
-          <a href="/scriptorium/comparateur" class="editorial-link">Comparer ce verset →</a>
+          <a href="/scriptorium/comparateur?ref=Jean%203%3A16" class="editorial-link">Comparer ce verset →</a>
         </div>
       </div>
     </section>
@@ -248,13 +249,15 @@ const gestures = [
   .hero-copy::after {
     position: absolute;
     z-index: -1;
-    top: 15%;
-    right: 5%;
-    width: 15rem;
-    height: 15rem;
-    border: 1px solid color-mix(in oklab, var(--gold) 18%, transparent);
-    border-radius: 999px;
+    top: 12%;
+    right: 8%;
+    width: clamp(7rem, 12vw, 11rem);
+    aspect-ratio: 1;
+    background: var(--gold);
+    mask: url("/cross-potent.svg") center / contain no-repeat;
+    opacity: 0.08;
     content: "";
+    pointer-events: none;
   }
 
   .hero h1 {
@@ -366,6 +369,12 @@ const gestures = [
     margin-top: 0.35rem;
     font-family: var(--type-display);
     font-size: 1.5rem;
+  }
+
+  .verse-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
   }
 
   blockquote {

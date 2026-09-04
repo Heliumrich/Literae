@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ArtworkCard from "../../components/ArtworkCard.astro";
 import Fleur from "../../components/Fleur.astro";
+import Cross from "../../components/Cross.astro";
 import {
   fetchAllFromDirectus,
   fetchArtistsList,
@@ -26,7 +27,7 @@ const featuredImage = featured
     <section class="art-hero">
       <div class="page-wrap art-hero-grid">
         <div class="art-hero-copy">
-          <p class="eyebrow">Contempler · Le cabinet d’images</p>
+          <p class="eyebrow art-eyebrow"><Cross kind="malte" /> Contempler · Le cabinet d’images</p>
           <h1>Le beau comme seuil du mystère.</h1>
           <p>
             Une collection d’œuvres chrétiennes à regarder lentement, accompagnées
@@ -103,7 +104,6 @@ const featuredImage = featured
 
   .art-hero-grid {
     display: grid;
-    min-height: min(46rem, calc(100dvh - 4.75rem));
     grid-template-columns: minmax(0, 0.92fr) minmax(20rem, 1.08fr);
     align-items: stretch;
   }
@@ -111,8 +111,14 @@ const featuredImage = featured
   .art-hero-copy {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: clamp(4rem, 8vw, 7rem) clamp(2.5rem, 7vw, 7rem) clamp(4rem, 8vw, 7rem) 0;
+    justify-content: flex-start;
+    padding: var(--page-start) clamp(2.5rem, 7vw, 7rem) var(--intro-end) 0;
+  }
+
+  .art-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
   }
 
   .art-hero h1 {

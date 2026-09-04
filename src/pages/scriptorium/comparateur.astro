@@ -13,7 +13,7 @@ const translations = getBibleTranslations();
   description="Collationner les versions françaises de la Sainte Écriture — Crampon, Fillion, Sacy, Segond, Ostervald, Vulgate."
 >
   <main>
-    <div class="page-wrap">
+    <div class="page-wrap comparator-wrap">
       <header class="page-intro">
         <p class="eyebrow">Lire · Les Écritures</p>
         <h1 class="mt-3">Le comparateur</h1>
@@ -27,3 +27,9 @@ const translations = getBibleTranslations();
     <div class="h-20 sm:h-28"></div>
   </main>
 </BaseLayout>
+
+<style>
+  .comparator-wrap {
+    width: min(100% - clamp(2rem, 4vw, 6rem), 120rem);
+  }
+</style>

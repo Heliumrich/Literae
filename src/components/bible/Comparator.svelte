@@ -22,6 +22,20 @@
   let current = { book: '', chapter: 0, verse: null as number | null, verseEnd: null as number | null };
   let nav: Navigation = { prev: null, next: null };
   let ready = false;
+  let highlightedVerse: number | null = null;
+
+  // Shared grid tracks align the headers and, optionally, each verse. Include
+  // missing verse numbers so that a gap in one edition cannot shift the rest.
+  $: verseNumbers = [...new Set(columns.flatMap(column => column.verses.map(verse => verse.verse)))].sort((a, b) => a - b);
+  $: readingColumns = columns.map(column => {
+    const byNumber = new Map(column.verses.map(verse => [verse.verse, verse]));
+    return {
+      ...column,
+      verses: align
+        ? verseNumbers.map(verse => byNumber.get(verse) ?? { verse, text: '' })
+        : column.verses,
+    };
+  });
 
   onMount(async () => {
     const saved = localStorage.getItem('bible-comparator');
@@ -34,6 +48,8 @@
         align = data.align ?? true;
       } catch {}
     }
+    const linkedRef = new URLSearchParams(window.location.search).get('ref');
+    if (linkedRef?.trim()) ref = linkedRef.trim();
 
     if (!translations.length) {
       error = 'La liste des traductions n’a pas pu être chargée.';
@@ -121,12 +137,6 @@
       };
 
       nav = data.navigation ?? { prev: null, next: null };
-
-      if (align) {
-        requestAnimationFrame(() => alignHeights());
-      } else {
-        resetHeights();
-      }
     } catch (e) {
       error = 'Le passage n’a pas pu être chargé.';
       columns = [];
@@ -136,29 +146,6 @@
     }
   }
 
-  function resetHeights() {
-    document.querySelectorAll<HTMLElement>('[data-verse]').forEach((element) => {
-      element.style.minHeight = 'auto';
-    });
-  }
-
-  function alignHeights() {
-    resetHeights();
-    if (window.matchMedia('(max-width: 680px)').matches) return;
-    const allNums = new Set<number>();
-    columns.forEach(column => column.verses.forEach(verse => allNums.add(verse.verse)));
-    allNums.forEach(num => {
-      const elements = document.querySelectorAll<HTMLElement>(`[data-verse="${num}"]`);
-      let max = 0;
-      elements.forEach(element => {
-        max = Math.max(max, element.offsetHeight);
-      });
-      elements.forEach(element => {
-        element.style.minHeight = max + 'px';
-      });
-    });
-  }
-
   async function navigate(dir: 'prev' | 'next') {
     const target = nav[dir];
     if (!target) return;
@@ -166,15 +153,8 @@
     await load();
   }
 
-  function toggleAlignment() {
-    savePrefs();
-    requestAnimationFrame(() => align ? alignHeights() : resetHeights());
-  }
-
   function onHover(verse: number, enter: boolean) {
-    document.querySelectorAll(`[data-verse="${verse}"]`).forEach(element => {
-      element.classList.toggle('highlight', enter);
-    });
+    highlightedVerse = enter ? verse : null;
   }
 </script>
 
@@ -213,7 +193,14 @@
       </fieldset>
 
       <label class="align-toggle">
-        <input type="checkbox" bind:checked={align} on:change={toggleAlignment} />
+        <input
+          type="checkbox"
+          checked={align}
+          on:change={(event) => {
+            align = event.currentTarget.checked;
+            savePrefs();
+          }}
+        />
         <span>Aligner les versets</span>
       </label>
 
@@ -265,9 +252,13 @@
   {/if}
 
   {#if columns.length > 0}
-    <div class="reading-scroll">
-      <div class="reading-columns" style={`--column-count: ${columns.length}`}>
-        {#each columns as column, index}
+      <div
+        class="reading-columns"
+        class:align-verses={align}
+        data-count={columns.length}
+        style={`--column-count: ${columns.length}; --verse-count: ${Math.max(1, verseNumbers.length)}; --row-count: ${align ? Math.max(1, verseNumbers.length) + 1 : 2}`}
+      >
+        {#each readingColumns as column, index}
           {@const meta = metaFor(index)}
           <article class="translation-page">
             <header class="translation-header">
@@ -301,20 +292,21 @@
               {#each column.verses as verse}
                 <div
                   class="verse"
+                  class:highlight={highlightedVerse === verse.verse}
+                  class:verse-missing={!verse.text}
                   data-verse={verse.verse}
                   on:mouseenter={() => onHover(verse.verse, true)}
                   on:mouseleave={() => onHover(verse.verse, false)}
                   role="presentation"
                 >
                   <span class="verse-number">{verse.verse}</span>
-                  <p>{verse.text}</p>
+                  <p>{verse.text || 'Verset absent de cette édition.'}</p>
                 </div>
               {/each}
             </div>
           </article>
         {/each}
       </div>
-    </div>
   {:else if ready && !loading && !error}
     <p class="empty-state">Choisissez un passage pour commencer la lecture.</p>
   {/if}
@@ -323,6 +315,7 @@
 <style>
   .comparator {
     --control-height: 2.75rem;
+    container: comparator / inline-size;
   }
 
   .comparator-controls {
@@ -454,6 +447,7 @@
   }
 
   .translation-picker select {
+    min-width: 0;
     width: 100%;
     padding: 0.35rem 1.5rem 0.35rem 0;
     border: 0;
@@ -509,27 +503,34 @@
     opacity: 0.28;
   }
 
-  .reading-scroll {
-    overflow-x: auto;
-    padding-bottom: 0.75rem;
-  }
-
   .reading-columns {
+    --visible-columns: 1;
     display: grid;
-    min-width: calc(var(--column-count) * 20rem);
-    grid-template-columns: repeat(var(--column-count), minmax(20rem, 1fr));
-    gap: 1px;
+    grid-template-columns: repeat(var(--visible-columns), minmax(0, 1fr));
+    gap: 0 1px;
+    max-width: calc(var(--visible-columns) * 34rem);
+    margin-inline: auto;
     border: 1px solid var(--border);
     background: var(--border);
   }
 
   .translation-page {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span var(--row-count);
+    row-gap: 0;
     min-width: 0;
+    padding-bottom: 0.7rem;
     background: var(--card);
+    overflow-wrap: anywhere;
+    border-top: 1px solid var(--border);
+  }
+
+  .translation-page:first-child {
+    border-top: 0;
   }
 
   .translation-header {
-    min-height: 14.5rem;
     padding: 1.5rem clamp(1.1rem, 2.5vw, 2rem) 1.25rem;
     border-bottom: 1px solid var(--border);
   }
@@ -594,7 +595,16 @@
   }
 
   .verses {
-    padding: 0.7rem 0;
+    align-self: start;
+    padding-top: 0.7rem;
+  }
+
+  .align-verses .verses {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span var(--verse-count);
+    row-gap: 0;
+    align-self: stretch;
   }
 
   .verse {
@@ -607,6 +617,12 @@
 
   .verse.highlight {
     background: color-mix(in oklab, var(--accent) 9%, transparent);
+  }
+
+  .verse-missing p {
+    color: var(--text-subtle);
+    font-style: italic;
+    font-size: 0.85rem;
   }
 
   .verse-number {
@@ -651,6 +667,42 @@
     to { transform: rotate(360deg); }
   }
 
+  /* Keep a comfortable reading measure. Four editions form two pairs until
+     all four can each have at least 28rem, rather than leaving a 3 + 1 row. */
+  @container comparator (min-width: 56rem) {
+    .reading-columns {
+      --visible-columns: 2;
+    }
+
+    .reading-columns[data-count="1"] {
+      --visible-columns: 1;
+    }
+
+    .translation-page:nth-child(2) {
+      border-top: 0;
+    }
+  }
+
+  @container comparator (min-width: 84rem) {
+    .reading-columns[data-count="3"] {
+      --visible-columns: 3;
+    }
+
+    .reading-columns[data-count="3"] .translation-page:nth-child(3) {
+      border-top: 0;
+    }
+  }
+
+  @container comparator (min-width: 112rem) {
+    .reading-columns {
+      --visible-columns: var(--column-count);
+    }
+
+    .translation-page {
+      border-top: 0;
+    }
+  }
+
   @media (max-width: 900px) {
     .controls-top {
       grid-template-columns: minmax(15rem, 1fr) auto 1.5rem;
@@ -668,8 +720,7 @@
 
   @media (max-width: 680px) {
     .comparator-controls {
-      top: 4.75rem;
-      margin-inline: -0.625rem;
+      position: static;
       padding-inline: 0.75rem;
     }
 
@@ -692,14 +743,11 @@
     }
 
     .translation-pickers {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x proximity;
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .translation-picker {
-      min-width: 13.5rem;
-      scroll-snap-align: start;
+      min-width: 0;
     }
 
     .passage-navigation {
@@ -711,13 +759,15 @@
       display: none;
     }
 
-    .reading-columns {
-      min-width: 0;
-      grid-template-columns: 1fr;
+    .column-count button {
+      width: 2.2rem;
     }
+  }
 
-    .translation-header {
-      min-height: 0;
+  @media (max-width: 400px) {
+    .align-toggle {
+      grid-column: 1 / -1;
+      justify-self: start;
     }
   }
 </style>

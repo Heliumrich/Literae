@@ -30,7 +30,7 @@ function cardHtml(item: Item, view: CatalogView, index: number) {
   const body = view === "list" ? item.description : item.lead;
   return `<article class="prayer-card">
     <p class="prayer-number">${String(index + 1).padStart(2, "0")}</p>
-    <a href="${escapeHtml(item.href)}">
+    <a class="prayer-card-link" href="${escapeHtml(item.href)}">
       <h2>${escapeHtml(item.title)}</h2>
       ${item.titleLatin ? `<p class="prayer-latin">${escapeHtml(item.titleLatin)}</p>` : ""}
     </a>

@@ -57,12 +57,11 @@ const { eyebrow, title, lead, note, items } = Astro.props;
 
   .placeholder-grid {
     display: grid;
-    min-height: min(43rem, calc(100dvh - 4.75rem));
     grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
     gap: clamp(3rem, 8vw, 8rem);
-    align-items: center;
-    padding-top: 5rem;
-    padding-bottom: 5rem;
+    align-items: start;
+    padding-top: var(--page-start);
+    padding-bottom: var(--intro-end);
   }
 
   .placeholder-copy h1 {
@@ -186,15 +185,15 @@ const { eyebrow, title, lead, note, items } = Astro.props;
     }
 
     .placeholder-grid {
-      gap: 4rem;
+      gap: 2rem;
     }
 
     .placeholder-mark {
-      grid-row: 1;
+      grid-row: 2;
     }
 
     .placeholder-copy {
-      grid-row: 2;
+      grid-row: 1;
     }
   }
 </style>

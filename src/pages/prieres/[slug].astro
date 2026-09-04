@@ -158,7 +158,7 @@ const initialMode = hasFrench && hasLatin ? "both" : hasFrench ? "fr" : "la";
 
 <style>
   main {
-    padding-top: clamp(2rem, 4vw, 3.5rem);
+    padding-top: var(--page-start);
   }
 
   .detail-back {
@@ -172,7 +172,7 @@ const initialMode = hasFrench && hasLatin ? "both" : hasFrench ? "fr" : "la";
 
   .prayer-header {
     max-width: 54rem;
-    padding: clamp(4rem, 8vw, 7rem) 0 clamp(4rem, 7vw, 6rem);
+    padding: var(--intro-end) 0 var(--intro-end);
   }
 
   .prayer-header h1 {

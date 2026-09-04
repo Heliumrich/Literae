@@ -130,12 +130,11 @@ const editions = Object.entries(TRANSLATION_EDITORIAL_META).map(([code, meta]) =
 
   .hero-grid {
     display: grid;
-    min-height: min(47rem, calc(100dvh - 4.75rem));
     grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.95fr);
     gap: clamp(3rem, 8vw, 8rem);
-    align-items: center;
-    padding-top: clamp(4rem, 8vw, 7rem);
-    padding-bottom: clamp(4rem, 8vw, 7rem);
+    align-items: start;
+    padding-top: var(--page-start);
+    padding-bottom: var(--intro-end);
   }
 
   .hero-copy h1 {
