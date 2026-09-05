@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import MusicNav from '../../../components/music/MusicNav.astro';
+import MusicTags from '../../../components/music/MusicTags.astro';
+import MusicDescription from '../../../components/music/MusicDescription.astro';
+import Fleur from '../../../components/Fleur.astro';
+import { fetchMusicCatalog } from '../../../lib/music-server';
+import { musicExcerpt, musicTypeLabels, type MusicAlbum } from '../../../lib/music';
+import '../../../styles/music.css';
+export const prerender = true;
+export async function getStaticPaths() {
+  const { albums } = await fetchMusicCatalog();
+  return albums.map(album => ({ params: { slug: album.slug }, props: { album } }));
+}
+interface Props { album: MusicAlbum; }
+const { album } = Astro.props;
+---
+<BaseLayout title={album.title} description={musicExcerpt(album.description) || `Découvrir ${album.title}, un album de la collection musicale de Literae.`}>
+  <main class="music-detail">
+    <div class="page-wrap">
+      <MusicNav active="albums" />
+      <a class="music-back" href="/musique/albums">← Tous les albums</a>
+      <article class="music-detail-hero">
+        <div class="music-detail-image music-album-cover">
+          {album.cover ? <img src={album.cover} alt={`Pochette de ${album.title}`} width="800" height="800" loading="eager" fetchpriority="high" /> : <Fleur class="music-placeholder" />}
+        </div>
+        <div class="music-detail-intro">
+          <p class="eyebrow">Écouter · Album{album.year ? ` · ${album.year}` : ''}</p>
+          <h1>{album.title}</h1>
+          {album.credits.length > 0 && <dl class="music-credits" aria-label="Artistes et contributions à cet album">
+            {album.credits.map(credit => <div>
+              <dt><a href={`/musique/artistes/${encodeURIComponent(credit.artist.slug)}`}>{credit.artist.name}</a></dt>
+              {credit.roles.length > 0 && <dd>{musicTypeLabels(credit.roles)}</dd>}
+            </div>)}
+          </dl>}
+          <div class="music-listen" aria-label="Liens d’écoute">
+            {album.youtube && <a class="editorial-button" href={album.youtube} target="_blank" rel="noopener noreferrer">Écouter sur YouTube <span aria-hidden="true">↗</span><span class="sr-only"> (nouvel onglet)</span></a>}
+            {album.spotify && <a class="editorial-button-secondary" href={album.spotify} target="_blank" rel="noopener noreferrer">Écouter sur Spotify <span aria-hidden="true">↗</span><span class="sr-only"> (nouvel onglet)</span></a>}
+            {!album.youtube && !album.spotify && <p class="music-listen-pending">Les liens d’écoute seront ajoutés prochainement.</p>}
+          </div>
+          <MusicTags tags={album.tags} base="/musique/albums" />
+        </div>
+      </article>
+      {album.description && <section class="music-about" aria-labelledby="album-about-title">
+        <div><p class="eyebrow">L’enregistrement</p><h2 id="album-about-title">À propos de l’album</h2></div>
+        <MusicDescription text={album.description} />
+      </section>}
+    </div>
+  </main>
+</BaseLayout>

@@ -1,21 +1,45 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import PlaceholderPage from "../components/PlaceholderPage.astro";
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MusicNav from '../components/music/MusicNav.astro';
+import MusicCard from '../components/music/MusicCard.astro';
+import MusicTags from '../components/music/MusicTags.astro';
+import Fleur from '../components/Fleur.astro';
+import { fetchMusicCatalog } from '../lib/music-server';
+import { albumMusicItem, musicExcerpt } from '../lib/music';
+import '../styles/music.css';
+export const prerender = true;
+const { albums, artists } = await fetchMusicCatalog();
+const featured = albums[0];
 ---
 
-<BaseLayout
-  title="Musique sacrée"
-  description="Le futur espace musical de Literae est en préparation."
->
-  <PlaceholderPage
-    eyebrow="Écouter"
-    title="Musique sacrée"
-    lead="Un futur espace d’écoute et de transmission, consacré aux traditions musicales qui portent la prière et élèvent l’esprit."
-    note="Collection et structure éditoriale à définir"
-    items={[
-      "Le chant grégorien et les grandes pièces du propre comme de l’ordinaire.",
-      "Les litanies et les chants issus des traditions chrétiennes orientales.",
-      "La musique classique, chorale et orchestrale liée au sacré.",
-    ]}
-  />
+<BaseLayout title="Écouter" description="Chants, musique sacrée et œuvres orchestrales : une collection d’albums et d’artistes pour découvrir et transmettre un héritage musical.">
+  <main class="music-home">
+    <div class="page-wrap">
+      <MusicNav active="home" />
+      <header class="music-home-intro">
+        <p class="eyebrow">Écouter · Un héritage vivant</p>
+        <h1>La beauté<br /><em>à l’écoute.</em></h1>
+        <p>Des voix qui portent la prière aux œuvres qui élèvent l’esprit, une invitation à découvrir, écouter et transmettre.</p>
+      </header>
+      <div class="music-entry-links">
+        <a href="/musique/albums"><span><span class="eyebrow">Les enregistrements</span><strong>Parcourir les albums</strong></span><span>{albums.length} {albums.length > 1 ? 'albums' : 'album'} <span aria-hidden="true">→</span></span></a>
+        <a href="/musique/artistes"><span><span class="eyebrow">Les voix & les maîtres</span><strong>Rencontrer les artistes</strong></span><span>{artists.length} {artists.length > 1 ? 'artistes' : 'artiste'} <span aria-hidden="true">→</span></span></a>
+      </div>
+      {featured && <section class="music-featured" aria-labelledby="featured-album-title">
+        <a class="music-featured-cover" href={`/musique/albums/${encodeURIComponent(featured.slug)}`} aria-label={`Découvrir ${featured.title}`}>
+          {featured.cover ? <img src={featured.cover} alt={`Pochette de ${featured.title}`} width="800" height="800" loading="eager" /> : <Fleur class="music-placeholder" />}
+        </a>
+        <div><p class="eyebrow">À découvrir</p><h2 id="featured-album-title"><a href={`/musique/albums/${encodeURIComponent(featured.slug)}`}>{featured.title}</a></h2>
+          <p class="music-featured-artists">{featured.credits.map((credit, index) => <>{index > 0 && ' · '}<a href={`/musique/artistes/${encodeURIComponent(credit.artist.slug)}`}>{credit.artist.name}</a></>)}{featured.year ? ` — ${featured.year}` : ''}</p>
+          {featured.description && <p class="music-featured-excerpt">{musicExcerpt(featured.description, 230)}</p>}
+          <MusicTags tags={featured.tags} base="/musique/albums" />
+          <a class="editorial-button" href={`/musique/albums/${encodeURIComponent(featured.slug)}`}>Découvrir l’album <span aria-hidden="true">→</span></a>
+        </div>
+      </section>}
+      {albums.length > 1 && <section class="music-discography" aria-labelledby="more-albums-title">
+        <div class="music-section-head"><h2 id="more-albums-title">Poursuivre l’écoute</h2><a href="/musique/albums" class="editorial-link">Tous les albums →</a></div>
+        <div class="music-grid">{albums.slice(1, 5).map(album => <MusicCard item={albumMusicItem(album)} />)}</div>
+      </section>}
+    </div>
+  </main>
 </BaseLayout>

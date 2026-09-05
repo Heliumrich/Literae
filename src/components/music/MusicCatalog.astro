@@ -1,0 +1,45 @@
+---
+import CollectionHeader from '../CollectionHeader.astro';
+import CatalogToolbar from '../CatalogToolbar.astro';
+import MusicNav from './MusicNav.astro';
+import MusicCard from './MusicCard.astro';
+import { PAGE_SIZE } from '../../lib/catalog';
+import { musicTypeLabel, type MusicItem, type MusicalArtist } from '../../lib/music';
+interface Props { kind: 'album' | 'artist'; items: MusicItem[]; artists?: MusicalArtist[]; }
+const { kind, items, artists = [] } = Astro.props;
+const isAlbum = kind === 'album';
+const tags = [...new Set(items.flatMap(item => item.tags))].sort((a, b) => a.localeCompare(b, 'fr'));
+const types = [...new Set(items.flatMap(item => item.types))].sort((a, b) => musicTypeLabel(a).localeCompare(musicTypeLabel(b), 'fr'));
+const availableArtists = artists.filter(artist => items.some(item => item.artists.includes(artist.slug)));
+---
+<div class="page-wrap">
+  <MusicNav active={isAlbum ? 'albums' : 'artists'} />
+  <CollectionHeader eyebrow={isAlbum ? 'Écouter · Les enregistrements' : 'Écouter · Les voix & les maîtres'}
+    title={isAlbum ? 'Les albums' : 'Les artistes'}
+    lead={isAlbum ? 'Des chants et des œuvres à retrouver, des interprétations à transmettre.' : 'Compositeurs, ensembles et interprètes : celles et ceux qui donnent voix à cet héritage.'}
+    count={items.length} countLabel={isAlbum ? (items.length > 1 ? 'albums' : 'album') : (items.length > 1 ? 'artistes' : 'artiste')} />
+</div>
+<section class="catalog-section" id="music-catalog" data-kind={kind} data-json={`/musique/${isAlbum ? 'albums' : 'artistes'}.json`} aria-label={isAlbum ? 'Catalogue des albums' : 'Catalogue des artistes musicaux'}>
+  <div class="page-wrap">
+    {types.length > 0 && <div class="type-filter-row" role="group" aria-label="Filtrer par type d’artiste">
+      {types.map(type => <button type="button" class="type-filter tag-pill" data-type={type} aria-pressed="false">{musicTypeLabel(type)}</button>)}
+    </div>}
+    {isAlbum && availableArtists.length > 0 && <label class="music-artist-filter" for="music-artist-filter">
+      <span>Artiste associé</span><select id="music-artist-filter"><option value="">Tous les artistes</option>
+        {availableArtists.map(artist => <option value={artist.slug}>{artist.name}</option>)}
+      </select>
+    </label>}
+    <CatalogToolbar tags={tags} showView={true} searchPlaceholder={isAlbum ? 'Rechercher un album, un artiste, une année…' : 'Rechercher un artiste ou une fonction…'} />
+    <p id="catalog-status" class="catalog-status" aria-live="polite">{items.length} {isAlbum ? 'album' : 'artiste'}{items.length > 1 ? 's' : ''}</p>
+    <p id="catalog-empty" class:list={['catalog-empty', { hidden: items.length > 0 }]}>La collection s’enrichira au fil des découvertes.</p>
+    <div id="catalog-grid" class="music-grid" data-ssr="1">
+      {items.slice(0, PAGE_SIZE).map((item, index) => <MusicCard item={item} eager={index < 8} />)}
+    </div>
+    <nav id="catalog-pager" class="catalog-pager" aria-label="Pagination"></nav>
+    <noscript><p class="music-noscript">Activez JavaScript pour utiliser les filtres et parcourir toutes les pages du catalogue.</p></noscript>
+  </div>
+</section>
+<script>
+  import { initMusicCatalog } from '../../lib/music-client';
+  initMusicCatalog();
+</script>

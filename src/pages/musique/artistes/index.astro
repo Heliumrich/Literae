@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import MusicCatalog from '../../../components/music/MusicCatalog.astro';
+import { fetchMusicCatalog } from '../../../lib/music-server';
+import { artistMusicItem } from '../../../lib/music';
+import '../../../styles/music.css';
+export const prerender = true;
+const { artists } = await fetchMusicCatalog();
+---
+<BaseLayout title="Artistes musicaux" description="Les compositeurs, orchestres, chœurs et interprètes de la collection musicale de Literae.">
+  <main><MusicCatalog kind="artist" items={artists.map(artistMusicItem)} /></main>
+</BaseLayout>

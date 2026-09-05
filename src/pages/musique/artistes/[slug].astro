@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import MusicNav from '../../../components/music/MusicNav.astro';
+import MusicTags from '../../../components/music/MusicTags.astro';
+import MusicDescription from '../../../components/music/MusicDescription.astro';
+import MusicCard from '../../../components/music/MusicCard.astro';
+import Fleur from '../../../components/Fleur.astro';
+import { fetchMusicCatalog } from '../../../lib/music-server';
+import { albumMusicItem, musicExcerpt, musicTypeLabel, type MusicAlbum, type MusicalArtist } from '../../../lib/music';
+import '../../../styles/music.css';
+export const prerender = true;
+export async function getStaticPaths() {
+  const { artists, albums } = await fetchMusicCatalog();
+  return artists.map(artist => ({ params: { slug: artist.slug }, props: {
+    artist, albums: albums.filter(album => album.credits.some(credit => credit.artist.id === artist.id)),
+  } }));
+}
+interface Props { artist: MusicalArtist; albums: MusicAlbum[]; }
+const { artist, albums } = Astro.props;
+---
+<BaseLayout title={artist.name} description={musicExcerpt(artist.description) || `Découvrir ${artist.name} et ses albums dans la collection musicale de Literae.`}>
+  <main class="music-detail">
+    <div class="page-wrap">
+      <MusicNav active="artists" />
+      <a class="music-back" href="/musique/artistes">← Tous les artistes</a>
+      <article class="music-detail-hero">
+        <div class="music-detail-image music-artist-portrait">
+          {artist.image ? <img src={artist.image} alt={artist.name} width="900" height="675" loading="eager" fetchpriority="high" /> : <Fleur class="music-placeholder" />}
+        </div>
+        <div class="music-detail-intro">
+          <p class="eyebrow music-types">{artist.types.length ? artist.types.map((type, index) => <>
+            {index > 0 && (index === artist.types.length - 1 ? ' et ' : ', ')}
+            <a href={`/musique/artistes?types=${encodeURIComponent(type)}`}>{musicTypeLabel(type)}</a>
+          </>) : 'Écouter · Artiste'}</p>
+          <h1>{artist.name}</h1>
+          <div class="music-listen" aria-label="Retrouver cet artiste">
+            {artist.website && <a class="editorial-link" href={artist.website} target="_blank" rel="noopener noreferrer">Site officiel ↗<span class="sr-only"> (nouvel onglet)</span></a>}
+            {artist.youtube && <a class="editorial-link" href={artist.youtube} target="_blank" rel="noopener noreferrer">YouTube ↗<span class="sr-only"> (nouvel onglet)</span></a>}
+            {artist.spotify && <a class="editorial-link" href={artist.spotify} target="_blank" rel="noopener noreferrer">Spotify ↗<span class="sr-only"> (nouvel onglet)</span></a>}
+          </div>
+          <MusicTags tags={artist.tags} base="/musique/artistes" />
+          {albums.length > 0 && <a class="music-discography-link editorial-link" href="#discographie">{albums.length} {albums.length > 1 ? 'albums dans la collection' : 'album dans la collection'} ↓</a>}
+        </div>
+      </article>
+      {artist.description && <section class="music-about" aria-labelledby="artist-about-title">
+        <div><p class="eyebrow">Une voix, un parcours</p><h2 id="artist-about-title">À propos</h2></div>
+        <MusicDescription text={artist.description} />
+      </section>}
+      <section class="music-discography" id="discographie" aria-labelledby="discography-title">
+        <div class="music-section-head"><div><p class="eyebrow">Dans la collection</p><h2 id="discography-title">Les albums de {artist.name}</h2></div>
+          <a class="editorial-link" href={`/musique/albums?artist=${encodeURIComponent(artist.slug)}`}>Voir dans le catalogue →</a>
+        </div>
+        {albums.length ? <div class="music-grid">{albums.map(album => <MusicCard item={albumMusicItem(album, album.credits.find(credit => credit.artist.id === artist.id)?.roles)} />)}</div>
+          : <p class="music-listen-pending">Aucun album de cet artiste n’est encore présent dans la collection.</p>}
+      </section>
+    </div>
+  </main>
+</BaseLayout>

@@ -1,0 +1,8 @@
+---
+import { micromark } from 'micromark';
+interface Props { text: string; }
+const { text } = Astro.props;
+// Raw HTML and dangerous URL protocols stay disabled in the Markdown renderer.
+const html = micromark(text).replace(/<(\/?)h[12](?=[ >])/g, '<$1h3');
+---
+<div class="rich-text music-description" set:html={html} />

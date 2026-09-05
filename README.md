@@ -14,8 +14,9 @@ Literae est un atelier catholique francophone pour lire la Sainte Écriture, con
 - un comparateur de traductions bibliques, présenté comme un pupitre en pages vis-à-vis ;
 - une galerie d’œuvres chrétiennes reliées à leurs artistes et aux figures représentées ;
 - un mémento de prières françaises et latines ;
+- une collection musicale d’albums et d’artistes, avec leurs présentations, contributions et liens d’écoute ;
 - deux thèmes de lecture : Parchemin et Nuit ;
-- des espaces réservés pour la bibliothèque, le calendrier liturgique et la musique sacrée.
+- des espaces réservés pour la bibliothèque et le calendrier liturgique.
 
 ## Architecture
 
@@ -23,7 +24,7 @@ Le site est conçu pour être statique partout où cela est possible.
 
 | Partie | Exécution | Technologie |
 |---|---|---|
-| Pages, œuvres, personnalités et prières | Générées au build | Astro |
+| Pages, œuvres, personnalités, prières et musique | Générées au build | Astro |
 | Catalogues de filtrage | JSON statique généré au build | Astro + JavaScript natif |
 | Thème, filtres et visionneuse | Dans le navigateur, sans framework | TypeScript |
 | Comparateur biblique | Unique îlot hydraté | Svelte |
@@ -87,6 +88,9 @@ Les collections actuellement consommées sont :
 - `artworks` pour les œuvres, leurs images, titres, datations, notices et relations ;
 - `artists` pour les artistes, saints, souverains et écrivains ;
 - `prayers` pour les titres, textes français et latins, descriptions et étiquettes.
+- `albums` et `musical_artists` pour la collection musicale ; la relation `albums.artists` expose les participations et leurs `roles`.
+
+Les fiches musicales affichent les descriptions Markdown, les tags et les liens externes renseignés dans le CMS. Les types généraux des artistes sont distincts de leurs rôles sur chaque album. Seuls les albums et artistes `published` sont exposés, y compris dans les relations. Les filtres (recherche, tags, types et artiste associé) utilisent `/musique/albums.json` et `/musique/artistes.json`, générés au build. Aucun lecteur embarqué ou import de pistes n’est utilisé.
 
 Seuls les éléments dont le statut est `published` sont intégrés. Les collections sont lues par pages de 100 éléments afin d’accompagner leur croissance. Les requêtes identiques sont mutualisées pendant le build.
 
@@ -133,7 +137,9 @@ Pour remplacer la base :
 | `/personalites` et `/personalites/[slug]` | Catalogue et notices biographiques |
 | `/prieres` et `/prieres/[slug]` | Mémento et lectures bilingues |
 | `/calendrier` | Calendrier liturgique, espace réservé |
-| `/musique` | Musique sacrée, espace réservé |
+| `/musique` | Accueil de la collection musicale |
+| `/musique/albums` et `/musique/albums/[slug]` | Catalogue des albums et fiches avec crédits et liens d’écoute |
+| `/musique/artistes` et `/musique/artistes/[slug]` | Catalogue des artistes musicaux et albums associés |
 | `/a-propos` | Présentation et colophon |
 | `/api/bible/verses` | Seule route exécutée côté serveur |
 

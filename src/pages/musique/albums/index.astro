@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import MusicCatalog from '../../../components/music/MusicCatalog.astro';
+import { fetchMusicCatalog } from '../../../lib/music-server';
+import { albumMusicItem } from '../../../lib/music';
+import '../../../styles/music.css';
+export const prerender = true;
+const { albums, artists } = await fetchMusicCatalog();
+---
+<BaseLayout title="Albums" description="Chant grégorien, musique sacrée, classique et orchestrale : les albums choisis par Literae.">
+  <main><MusicCatalog kind="album" items={albums.map(album => albumMusicItem(album))} artists={artists} /></main>
+</BaseLayout>

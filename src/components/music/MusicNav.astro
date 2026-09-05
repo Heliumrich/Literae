@@ -1,0 +1,12 @@
+---
+interface Props { active?: 'home' | 'albums' | 'artists'; }
+const { active } = Astro.props;
+const links = [
+  { key: 'home', href: '/musique', label: 'Écouter' },
+  { key: 'albums', href: '/musique/albums', label: 'Les albums' },
+  { key: 'artists', href: '/musique/artistes', label: 'Les artistes' },
+];
+---
+<nav class="music-nav" aria-label="Explorer la musique">
+  {links.map(link => <a href={link.href} aria-current={active === link.key ? 'page' : undefined}>{link.label}</a>)}
+</nav>

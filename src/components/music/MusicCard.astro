@@ -1,0 +1,6 @@
+---
+import { musicCardHtml, type MusicItem } from '../../lib/music';
+interface Props { item: MusicItem; eager?: boolean; }
+const { item, eager = false } = Astro.props;
+---
+<Fragment set:html={musicCardHtml(item, eager)} />

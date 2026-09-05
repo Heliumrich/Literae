@@ -1,0 +1,7 @@
+---
+interface Props { tags: string[]; base: string; }
+const { tags, base } = Astro.props;
+---
+{tags.length > 0 && <ul class="music-tags" aria-label="Étiquettes">
+  {tags.map(tag => <li><a href={`${base}?tags=${encodeURIComponent(tag)}`}>{tag}</a></li>)}
+</ul>}
