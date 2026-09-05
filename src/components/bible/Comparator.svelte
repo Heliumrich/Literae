@@ -180,7 +180,7 @@
 </script>
 
 <div class="comparator" aria-busy={loading} style={`--text-scale: ${textScale}`}>
-  <section class="comparator-controls" aria-label="Choisir un passage et des traductions">
+  <section class="comparator-controls" style={`--column-count: ${columns.length || numCols}`} aria-label="Choisir un passage et des traductions">
     <div class="controls-top">
       <div class="reference-field">
         <label for="cmp-ref">Passage</label>
@@ -552,6 +552,7 @@
     padding: 2.3rem 0 0.25rem;
   }
 
+  .comparator-controls,
   .passage-navigation,
   .reading-columns {
     max-width: max(68rem, calc(var(--column-count) * 34rem));
@@ -764,6 +765,12 @@
     to { transform: rotate(360deg); }
   }
 
+  @media (max-width: 1440px) {
+    .comparator-controls {
+      max-width: none;
+    }
+  }
+
   @media (max-width: 1000px) {
     .controls-top {
       gap: 0.75rem 1rem;
@@ -784,6 +791,7 @@
       padding: 0.8rem 0.55rem;
     }
 
+    .comparator-controls,
     .passage-navigation,
     .reading-columns {
       max-width: none;
