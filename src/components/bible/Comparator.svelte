@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { formatRefLabel, parseReference } from '../../lib/bible-ref';
   import type { BibleTranslation } from '../../lib/bible-translations';
-  import { getBibleNavigation, type BibleNavigationBook } from '../../lib/bible-navigation';
+  import { getBibleNavigation, type BibleCatalogBook } from '../../lib/bible-navigation';
+  import PassagePicker from './PassagePicker.svelte';
 
   type Translation = BibleTranslation;
   type Verse = { verse: number; text: string };
@@ -11,7 +12,7 @@
   type Navigation = { prev: NavTarget | null; next: NavTarget | null };
 
   export let initialTranslations: Translation[] = [];
-  export let initialNavigationBooks: BibleNavigationBook[] = [];
+  export let initialNavigationBooks: BibleCatalogBook[] = [];
 
   let translations: Translation[] = initialTranslations;
   let ref = 'Jean 3:16';
@@ -184,6 +185,15 @@
       <div class="reference-field">
         <label for="cmp-ref">Passage</label>
         <div class="reference-input">
+          <PassagePicker
+            books={initialNavigationBooks}
+            currentBook={current.book}
+            currentChapter={current.chapter}
+            onselect={(book, chapter) => {
+              ref = formatRefLabel({ book, chapter, verse: null, verseEnd: null });
+              load();
+            }}
+          />
           <input
             id="cmp-ref"
             type="text"
@@ -380,8 +390,8 @@
   }
 
   .reference-field {
-    flex: 1 1 14rem;
-    min-width: min(100%, 14rem);
+    flex: 1 1 16.75rem;
+    min-width: min(100%, 16.75rem);
   }
 
   .text-size-control,
@@ -403,7 +413,7 @@
 
   .reference-input {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     height: var(--control-height);
     border-bottom: 1px solid var(--text);
   }

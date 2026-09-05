@@ -31,7 +31,7 @@ Le site est conçu pour être statique partout où cela est possible.
 
 Directus n’est interrogé que pendant `npm run build`. Une modification d’œuvre, de personnalité ou de prière devient donc publique au prochain build, sans appel au CMS lors de la consultation des pages.
 
-La page du comparateur est elle aussi prérendue. La liste des traductions est extraite de SQLite au build et transmise à l’îlot Svelte. Seul `/api/bible/verses` ouvre `bible.db` à l’exécution.
+La page du comparateur est elle aussi prérendue. La liste des traductions et l’index des livres et chapitres sont extraits de SQLite au build et transmis à l’îlot Svelte. Le sélecteur de passage présente les livres par Testament, puis leurs chapitres, sans requête avant le choix du chapitre à lire. Seul `/api/bible/verses` ouvre `bible.db` à l’exécution.
 
 Le script `npm run check:static` protège cette frontière : il échoue si une seconde route devient dynamique, si un autre îlot est hydraté ou si un catalogue JSON cesse d’être prérendu. Le détail est documenté dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 

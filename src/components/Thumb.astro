@@ -7,6 +7,7 @@ interface Props {
   loading?: "eager" | "lazy";
   fetchpriority?: "high" | "low" | "auto";
   zoom?: boolean;
+  href?: string;
   class?: string;
   [key: string]: unknown;
 }
@@ -17,12 +18,14 @@ const {
   loading = "lazy",
   fetchpriority = "low",
   zoom = false,
+  href,
   class: className,
   ...rest
 } = Astro.props;
 ---
 
 <div class="thumb-slot">
+  {href && <a class="thumb-link" href={href} aria-label={`Voir : ${alt}`}></a>}
   {
     src ? (
       <>

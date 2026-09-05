@@ -53,6 +53,7 @@ function cardHtml(item: CatalogItem, kind: "artwork" | "artist", eager = false) 
       ? `<button type="button" class="thumb-zoom" aria-label="Agrandir : ${escapeHtml(item.title)}" ${lbAttrs(item)}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M15.5 15.5 21 21"></path></svg></button>`
       : "";
   const image = `<div class="thumb-slot">
+    ${kind === "artwork" ? `<a class="thumb-link" href="${escapeHtml(item.href)}" aria-label="Voir : ${escapeHtml(item.title)}"></a>` : ""}
     ${item.thumb ? `<span class="thumb-ph" aria-hidden="true"><img src="/fleur-de-lys.svg" alt="" width="40" height="40" class="size-10 opacity-40" /></span>` : ""}
     ${img}
     ${zoom}

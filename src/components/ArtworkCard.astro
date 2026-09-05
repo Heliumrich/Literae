@@ -23,6 +23,7 @@ const href = `${basePath}/${work.slug}`;
 
 <article class="artwork-card catalog-card group">
   <Thumb
+    href={href}
     src={src}
     alt={title}
     loading={index < 8 ? "eager" : "lazy"}

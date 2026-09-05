@@ -4,6 +4,11 @@ export type BibleNavigationBook = {
   chapters: number[];
 };
 
+export type BibleCatalogBook = BibleNavigationBook & {
+  name: string;
+  testament: 'OT' | 'NT';
+};
+
 export type BibleNavTarget = {
   book: string;
   chapter: number;

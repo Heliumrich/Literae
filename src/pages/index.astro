@@ -84,7 +84,7 @@ const gestures = [
               <span aria-hidden="true">→</span>
             </a>
             <a href={`${ART_BASE}/`} class="editorial-button-secondary">
-              Parcourir les œuvres
+              Contempler le Beau
             </a>
           </div>
         </div>
@@ -249,9 +249,9 @@ const gestures = [
   .hero-copy::after {
     position: absolute;
     z-index: -1;
-    top: 12%;
-    right: 8%;
-    width: clamp(7rem, 12vw, 11rem);
+    top: 1.25rem;
+    right: 1.5rem;
+    width: clamp(4rem, 5vw, 5rem);
     aspect-ratio: 1;
     background: var(--gold);
     mask: url("/cross-potent.svg") center / contain no-repeat;
@@ -551,6 +551,12 @@ const gestures = [
       width: min(100% - 2rem, 46rem);
       margin-inline: auto;
       padding-right: 0;
+    }
+
+    .hero-copy::after {
+      top: 0.75rem;
+      right: 0.5rem;
+      width: 2.75rem;
     }
 
     .hero-art {
