@@ -269,7 +269,7 @@
     </div>
   </section>
 
-  <nav class="passage-navigation" aria-label="Navigation dans la Bible">
+  <nav class="passage-navigation" style={`--column-count: ${Math.max(1, columns.length)}`} aria-label="Navigation dans la Bible">
     <button on:click={() => navigate('prev')} disabled={loading || !nav.prev} aria-label="Passage précédent">
       <span aria-hidden="true">←</span> <span>Précédent</span>
     </button>
@@ -542,6 +542,12 @@
     padding: 2.3rem 0 0.25rem;
   }
 
+  .passage-navigation,
+  .reading-columns {
+    max-width: calc(var(--column-count) * 34rem);
+    margin-inline: auto;
+  }
+
   .passage-navigation > div {
     grid-column: 1 / -1;
     grid-row: 1;
@@ -571,7 +577,7 @@
     align-items: flex-end;
     padding-bottom: 0.25rem;
     gap: 0.5rem;
-    color: var(--text-muted);
+    color: var(--text);
     font-family: var(--type-ui);
     font-size: 0.7rem;
     letter-spacing: 0.06em;
@@ -591,8 +597,6 @@
     display: grid;
     grid-template-columns: repeat(var(--column-count), minmax(0, 1fr));
     gap: 0 1px;
-    max-width: calc(var(--column-count) * 34rem);
-    margin-inline: auto;
     border: 1px solid var(--border);
     background: var(--border);
   }
@@ -692,8 +696,8 @@
   .verse {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    column-gap: 0.3rem;
-    padding: 0.72rem 0.4rem 0.72rem 0.25rem;
+    column-gap: 0.5rem;
+    padding: 0.72rem clamp(0.75rem, 1.5vw, 1.5rem);
     transition: background 120ms ease;
   }
 
@@ -770,6 +774,7 @@
       padding: 0.8rem 0.55rem;
     }
 
+    .passage-navigation,
     .reading-columns {
       max-width: none;
     }
@@ -811,14 +816,10 @@
     }
 
     .verse {
-      display: block;
-      padding: 0.5rem 0.25rem;
+      padding-block: 0.5rem;
     }
 
     .verse-number {
-      min-width: 0;
-      float: left;
-      margin-right: 0.35em;
       padding-top: 0.2em;
       font-size: calc(var(--verse-base-size) * var(--text-scale) * 0.65);
     }
@@ -830,6 +831,11 @@
   }
 
   @media (max-width: 680px) {
+    .verse {
+      column-gap: 0.3rem;
+      padding-inline: 0.25rem;
+    }
+
     .comparator-controls {
       padding-inline: 0.45rem;
     }
