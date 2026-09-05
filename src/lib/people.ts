@@ -2,7 +2,8 @@ export const PERSON_TYPES = [
   { key: "artist", labels: ["artist", "artiste"], fr: "Artiste" },
   { key: "saint", labels: ["saint"], fr: "Saint" },
   { key: "monarch", labels: ["monarch", "monarque"], fr: "Monarque" },
-  { key: "writer", labels: ["writer", "ecrivain", "écrivain"], fr: "Écrivain" },
+  { key: "author", labels: ["author", "auteur", "writer", "ecrivain", "écrivain"], fr: "Auteur" },
+  { key: "other", labels: ["other", "autre"], fr: "Autre" },
 ] as const;
 
 export type PersonTypeKey = (typeof PERSON_TYPES)[number]["key"];

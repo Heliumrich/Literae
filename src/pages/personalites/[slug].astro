@@ -9,7 +9,6 @@ import {
   looksLikeHtml,
 } from "../../lib/directus";
 import {
-  formatPersonRoles,
   parsePersonTypes,
   personTypeLabel,
 } from "../../lib/people";
@@ -56,7 +55,6 @@ const { person, createdWorks, depictedWorks } = Astro.props;
 const photoSrc = getAssetURL(fileIdOf(person.photo), "medium");
 const photoLarge = getAssetURL(fileIdOf(person.photo), "large");
 const types = parsePersonTypes(person.type);
-const role = formatPersonRoles(types) || "Personnalité";
 const tags = Array.isArray(person.tags)
   ? person.tags
   : typeof person.tags === "string"
@@ -100,7 +98,14 @@ const dates =
         </div>
 
         <div class="person-intro">
-          <p class="eyebrow">{role}</p>
+          <p class="eyebrow person-roles">
+            {types.length > 0 ? types.map((type, index) => (
+              <>
+                {index > 0 && (index === types.length - 1 ? " et " : ", ")}
+                <a href={`/personalites?types=${type}`}>{personTypeLabel(type)}</a>
+              </>
+            )) : "Personnalité"}
+          </p>
           <h1>{person.name}</h1>
           {person.name_latin && <p class="person-latin">{person.name_latin}</p>}
           {dates && <p class="person-dates">{dates}</p>}
@@ -108,11 +113,8 @@ const dates =
             <p class="person-lead">{person.short_description}</p>
           )}
 
-          {(types.length > 0 || tags.length > 0) && (
+          {tags.length > 0 && (
             <ul class="person-taxonomy">
-              {types.map((type) => (
-                <li><a href={`/personalites?types=${type}`}>{personTypeLabel(type)}</a></li>
-              ))}
               {tags.map((tag: string) => (
                 <li><a href={`/personalites?tags=${encodeURIComponent(tag)}`}>{tag}</a></li>
               ))}
@@ -240,6 +242,19 @@ const dates =
     margin-top: 0.8rem;
   }
 
+  .person-roles a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+    text-underline-offset: 0.25em;
+  }
+
+  .person-roles a:hover,
+  .person-roles a:focus-visible {
+    color: var(--accent);
+    text-decoration-color: currentColor;
+  }
+
   .person-latin {
     margin-top: 0.8rem;
     color: var(--text-subtle);
@@ -314,17 +329,17 @@ const dates =
   }
 
   .works-head {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
-    justify-content: space-between;
-    gap: 2rem;
+    gap: clamp(0.75rem, 2vw, 2rem);
   }
 
   .works-head h2 {
-    max-width: 17ch;
     margin-top: 0.6rem;
     font-size: clamp(2.5rem, 5vw, 4.5rem);
     line-height: 0.95;
+    overflow-wrap: anywhere;
   }
 
   .works-head > p {
@@ -332,7 +347,9 @@ const dates =
     font-family: var(--type-ui);
     font-size: 0.68rem;
     letter-spacing: 0.07em;
+    text-align: right;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   @media (max-width: 760px) {
@@ -343,11 +360,6 @@ const dates =
 
     .person-portrait {
       width: min(100%, 24rem);
-    }
-
-    .works-head {
-      align-items: flex-start;
-      flex-direction: column;
     }
   }
 </style>

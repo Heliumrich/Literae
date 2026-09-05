@@ -1,11 +1,12 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Comparator from "../../components/bible/Comparator.svelte";
-import { getBibleTranslations } from "../../lib/bible-server";
+import { getBibleTranslations, getBibleNavigationBooks } from "../../lib/bible-server";
 
 export const prerender = true;
 
 const translations = getBibleTranslations();
+const navigationBooks = getBibleNavigationBooks();
 ---
 
 <BaseLayout
@@ -22,7 +23,7 @@ const translations = getBibleTranslations();
           éclairer le texte, verset après verset.
         </p>
       </header>
-      <Comparator client:only="svelte" initialTranslations={translations} />
+      <Comparator client:only="svelte" initialTranslations={translations} initialNavigationBooks={navigationBooks} />
     </div>
     <div class="h-20 sm:h-28"></div>
   </main>
@@ -31,5 +32,15 @@ const translations = getBibleTranslations();
 <style>
   .comparator-wrap {
     width: min(100% - clamp(2rem, 4vw, 6rem), 120rem);
+  }
+
+  @media (max-width: 1000px), (pointer: coarse) and (max-height: 600px) {
+    .comparator-wrap {
+      width: calc(100% - 0.75rem);
+    }
+
+    .page-intro {
+      padding-inline: 0.4rem;
+    }
   }
 </style>

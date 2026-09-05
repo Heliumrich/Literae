@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { formatRefLabel, parseReference } from '../../lib/bible-ref';
   import type { BibleTranslation } from '../../lib/bible-translations';
+  import { getBibleNavigation, type BibleNavigationBook } from '../../lib/bible-navigation';
 
   type Translation = BibleTranslation;
   type Verse = { verse: number; text: string };
@@ -10,12 +11,15 @@
   type Navigation = { prev: NavTarget | null; next: NavTarget | null };
 
   export let initialTranslations: Translation[] = [];
+  export let initialNavigationBooks: BibleNavigationBook[] = [];
 
   let translations: Translation[] = initialTranslations;
   let ref = 'Jean 3:16';
   let numCols = 2;
   let selectedIds: number[] = [];
   let align = true;
+  let textScale = 1;
+  let compactLayout = false;
   let loading = false;
   let error = '';
   let columns: Column[] = [];
@@ -37,6 +41,14 @@
     };
   });
 
+  onMount(() => {
+    const compactScreen = window.matchMedia('(max-width: 1000px), (pointer: coarse) and (max-height: 600px)');
+    const updateCompactLayout = () => { compactLayout = compactScreen.matches; };
+    updateCompactLayout();
+    compactScreen.addEventListener('change', updateCompactLayout);
+    return () => compactScreen.removeEventListener('change', updateCompactLayout);
+  });
+
   onMount(async () => {
     const saved = localStorage.getItem('bible-comparator');
     if (saved) {
@@ -46,6 +58,9 @@
         numCols = Math.min(4, Math.max(1, data.numCols ?? 2));
         selectedIds = Array.isArray(data.selectedIds) ? data.selectedIds : [];
         align = data.align ?? true;
+        if (typeof data.textScale === 'number' && Number.isFinite(data.textScale)) {
+          textScale = Math.min(1.6, Math.max(0.7, data.textScale));
+        }
       } catch {}
     }
     const linkedRef = new URLSearchParams(window.location.search).get('ref');
@@ -79,8 +94,13 @@
   function savePrefs() {
     if (!ready) return;
     localStorage.setItem('bible-comparator', JSON.stringify({
-      ref, numCols, selectedIds, align
+      ref, numCols, selectedIds, align, textScale
     }));
+  }
+
+  function adjustTextSize(direction: -1 | 1) {
+    textScale = Math.min(1.6, Math.max(0.7, Math.round((textScale + direction * 0.1) * 10) / 10));
+    savePrefs();
   }
 
   function setNumCols(value: number) {
@@ -136,7 +156,7 @@
         verseEnd: data.verseEnd || parsed.verseEnd || null,
       };
 
-      nav = data.navigation ?? { prev: null, next: null };
+      nav = data.navigation ?? getBibleNavigation(initialNavigationBooks, current);
     } catch (e) {
       error = 'Le passage n’a pas pu être chargé.';
       columns = [];
@@ -149,7 +169,7 @@
   async function navigate(dir: 'prev' | 'next') {
     const target = nav[dir];
     if (!target) return;
-    ref = target.book + ' ' + target.chapter + (target.verse ? ':' + target.verse : '');
+    ref = formatRefLabel({ ...target, verse: target.verse ?? null, verseEnd: null });
     await load();
   }
 
@@ -158,7 +178,7 @@
   }
 </script>
 
-<div class="comparator" aria-busy={loading}>
+<div class="comparator" aria-busy={loading} style={`--text-scale: ${textScale}`}>
   <section class="comparator-controls" aria-label="Choisir un passage et des traductions">
     <div class="controls-top">
       <div class="reference-field">
@@ -177,6 +197,25 @@
           <button on:click={load} aria-label="Charger ce passage">Lire <span aria-hidden="true">→</span></button>
         </div>
       </div>
+
+      <fieldset class="text-size-control">
+        <legend>Taille du texte</legend>
+        <div>
+          <button
+            type="button"
+            aria-label="Réduire la taille du texte"
+            disabled={textScale <= 0.7}
+            on:click={() => adjustTextSize(-1)}
+          >−</button>
+          <output aria-live="polite" aria-label="Échelle du texte">{Math.round(textScale * 100)} %</output>
+          <button
+            type="button"
+            aria-label="Augmenter la taille du texte"
+            disabled={textScale >= 1.6}
+            on:click={() => adjustTextSize(1)}
+          >+</button>
+        </div>
+      </fieldset>
 
       <fieldset class="column-count">
         <legend>Pages en regard</legend>
@@ -231,7 +270,7 @@
   </section>
 
   <nav class="passage-navigation" aria-label="Navigation dans la Bible">
-    <button on:click={() => navigate('prev')} disabled={!nav.prev}>
+    <button on:click={() => navigate('prev')} disabled={loading || !nav.prev} aria-label="Passage précédent">
       <span aria-hidden="true">←</span> <span>Précédent</span>
     </button>
     {#if current.book}
@@ -240,7 +279,7 @@
         <h2>{formatRefLabel(current)}</h2>
       </div>
     {/if}
-    <button on:click={() => navigate('next')} disabled={!nav.next}>
+    <button on:click={() => navigate('next')} disabled={loading || !nav.next} aria-label="Passage suivant">
       <span>Suivant</span> <span aria-hidden="true">→</span>
     </button>
   </nav>
@@ -265,6 +304,8 @@
               <p class="translation-code">{column.code} · {meta?.language_label || 'Traduction'}</p>
               <h3>{meta?.name_short || column.name}</h3>
               {#if meta && (meta.date_label || meta.authors_label || meta.source_label)}
+                <details class="edition-details" open={!compactLayout}>
+                  <summary>Édition</summary>
                 <dl>
                   <div>
                     <dt>Date</dt>
@@ -285,6 +326,7 @@
                     <p>{meta.notice}</p>
                   </details>
                 {/if}
+                </details>
               {/if}
             </header>
 
@@ -315,6 +357,7 @@
 <style>
   .comparator {
     --control-height: 2.75rem;
+    --verse-base-size: 1.12rem;
     container: comparator / inline-size;
   }
 
@@ -331,9 +374,23 @@
 
   .controls-top {
     display: grid;
-    grid-template-columns: minmax(15rem, 1fr) auto auto 1.5rem;
+    grid-template-areas: "reference size count align loading";
+    grid-template-columns: minmax(12rem, 24rem) auto auto minmax(0, 1fr) 1.5rem;
     gap: 1.25rem;
     align-items: end;
+  }
+
+  .reference-field {
+    grid-area: reference;
+    min-width: 0;
+  }
+
+  .text-size-control {
+    grid-area: size;
+  }
+
+  .column-count {
+    grid-area: count;
   }
 
   label,
@@ -385,10 +442,33 @@
     text-transform: uppercase;
   }
 
-  .column-count > div {
+  .column-count > div,
+  .text-size-control > div {
     display: flex;
     height: var(--control-height);
     border: 1px solid var(--border);
+  }
+
+  .text-size-control button {
+    width: 2.5rem;
+    color: var(--accent);
+    font-family: var(--type-ui);
+    font-size: 1.1rem;
+  }
+
+  .text-size-control button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .text-size-control output {
+    display: grid;
+    min-width: 2.8rem;
+    place-items: center;
+    color: var(--text-muted);
+    font-family: var(--type-ui);
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .column-count button {
@@ -409,6 +489,7 @@
   }
 
   .align-toggle {
+    grid-area: align;
     display: flex;
     height: var(--control-height);
     align-items: center;
@@ -427,6 +508,7 @@
   }
 
   .loading-mark {
+    grid-area: loading;
     display: grid;
     width: 1.5rem;
     height: var(--control-height);
@@ -486,6 +568,8 @@
 
   .passage-navigation button {
     display: flex;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     align-items: center;
     gap: 0.5rem;
     color: var(--text-muted);
@@ -497,6 +581,7 @@
 
   .passage-navigation button:last-child {
     justify-self: end;
+    justify-content: flex-end;
   }
 
   .passage-navigation button:disabled {
@@ -504,11 +589,10 @@
   }
 
   .reading-columns {
-    --visible-columns: 1;
     display: grid;
-    grid-template-columns: repeat(var(--visible-columns), minmax(0, 1fr));
+    grid-template-columns: repeat(var(--column-count), minmax(0, 1fr));
     gap: 0 1px;
-    max-width: calc(var(--visible-columns) * 34rem);
+    max-width: calc(var(--column-count) * 34rem);
     margin-inline: auto;
     border: 1px solid var(--border);
     background: var(--border);
@@ -523,11 +607,6 @@
     padding-bottom: 0.7rem;
     background: var(--card);
     overflow-wrap: anywhere;
-    border-top: 1px solid var(--border);
-  }
-
-  .translation-page:first-child {
-    border-top: 0;
   }
 
   .translation-header {
@@ -547,7 +626,7 @@
   .translation-header h3 {
     margin-top: 0.45rem;
     font-family: var(--type-display);
-    font-size: clamp(1.75rem, 2.7vw, 2.45rem);
+    font-size: clamp(0.95rem, calc(10cqw / var(--column-count)), 2.45rem);
     line-height: 1;
   }
 
@@ -577,6 +656,10 @@
     margin-top: 1rem;
     color: var(--text-subtle);
     font-size: 0.72rem;
+  }
+
+  .edition-details {
+    margin-top: 0.85rem;
   }
 
   summary {
@@ -635,7 +718,7 @@
   }
 
   .verse p {
-    font-size: clamp(0.98rem, 1.25vw, 1.12rem);
+    font-size: calc(var(--verse-base-size) * var(--text-scale));
     line-height: 1.62;
   }
 
@@ -667,49 +750,14 @@
     to { transform: rotate(360deg); }
   }
 
-  /* Keep a comfortable reading measure. Four editions form two pairs until
-     all four can each have at least 28rem, rather than leaving a 3 + 1 row. */
-  @container comparator (min-width: 56rem) {
-    .reading-columns {
-      --visible-columns: 2;
-    }
-
-    .reading-columns[data-count="1"] {
-      --visible-columns: 1;
-    }
-
-    .translation-page:nth-child(2) {
-      border-top: 0;
-    }
-  }
-
-  @container comparator (min-width: 84rem) {
-    .reading-columns[data-count="3"] {
-      --visible-columns: 3;
-    }
-
-    .reading-columns[data-count="3"] .translation-page:nth-child(3) {
-      border-top: 0;
-    }
-  }
-
-  @container comparator (min-width: 112rem) {
-    .reading-columns {
-      --visible-columns: var(--column-count);
-    }
-
-    .translation-page {
-      border-top: 0;
-    }
-  }
-
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
     .controls-top {
-      grid-template-columns: minmax(15rem, 1fr) auto 1.5rem;
+      grid-template-areas: "reference size count" "align align loading";
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 0.75rem 1rem;
     }
 
     .align-toggle {
-      grid-column: 1 / -1;
       height: auto;
     }
 
@@ -718,19 +766,83 @@
     }
   }
 
-  @media (max-width: 680px) {
+  @media (max-width: 1000px), (pointer: coarse) and (max-height: 600px) {
+    .comparator {
+      --verse-base-size: 0.875rem;
+    }
+
     .comparator-controls {
       position: static;
-      padding-inline: 0.75rem;
+      padding: 0.8rem 0.55rem;
+    }
+
+    .reading-columns {
+      max-width: none;
+    }
+
+    .reading-columns[data-count="3"] {
+      --verse-base-size: 0.8125rem;
+    }
+
+    .reading-columns[data-count="4"] {
+      --verse-base-size: 0.75rem;
+    }
+
+    .translation-header {
+      padding: 0.8rem clamp(0.25rem, 1vw, 0.7rem) 0.7rem;
+    }
+
+    .translation-code {
+      font-size: 0.55rem;
+      letter-spacing: 0.03em;
+    }
+
+    .translation-header dl {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.7rem;
+    }
+
+    .translation-header dd {
+      font-size: 0.65rem;
+    }
+
+    .edition-details {
+      margin-top: 0.65rem;
+    }
+
+    summary {
+      font-size: 0.57rem;
+      letter-spacing: 0;
+    }
+
+    .verse {
+      display: block;
+      padding: 0.5rem clamp(0.2rem, 0.8vw, 0.6rem);
+    }
+
+    .verse-number {
+      float: left;
+      margin-right: 0.35em;
+      padding-top: 0.2em;
+      font-size: calc(var(--verse-base-size) * var(--text-scale) * 0.65);
+    }
+
+    .verse p {
+      line-height: 1.5;
+      hyphens: auto;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .comparator-controls {
+      padding-inline: 0.45rem;
     }
 
     .controls-top {
-      grid-template-columns: 1fr auto;
-      gap: 0.8rem;
-    }
-
-    .reference-field {
-      grid-column: 1 / -1;
+      grid-template-areas: "reference size" "count align";
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.75rem 0.5rem;
     }
 
     .loading-mark {
@@ -738,12 +850,15 @@
     }
 
     .align-toggle {
-      grid-column: auto;
       justify-self: end;
+      gap: 0.3rem;
+      font-size: 0.63rem;
     }
 
     .translation-pickers {
-      grid-template-columns: minmax(0, 1fr);
+      gap: 0.35rem 0.75rem;
+      margin-top: 0.7rem;
+      padding-top: 0.7rem;
     }
 
     .translation-picker {
@@ -762,12 +877,13 @@
     .column-count button {
       width: 2.2rem;
     }
-  }
 
-  @media (max-width: 400px) {
-    .align-toggle {
-      grid-column: 1 / -1;
-      justify-self: start;
+    .text-size-control button {
+      width: 2.25rem;
+    }
+
+    .text-size-control output {
+      min-width: 2.4rem;
     }
   }
 </style>

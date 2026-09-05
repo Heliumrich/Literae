@@ -1,4 +1,5 @@
 import { PAGE_SIZE } from "./catalog";
+import { formatPersonRoles, parsePersonTypes } from "./people";
 import { hydrateThumbs } from "./thumbs";
 import { setLightboxGallery } from "./lightbox";
 import {
@@ -42,14 +43,8 @@ function lbAttrs(item: CatalogItem) {
 }
 
 function cardHtml(item: CatalogItem, kind: "artwork" | "artist", eager = false) {
-  const personLabels: Record<string, string> = {
-    artist: "Artiste",
-    saint: "Saint",
-    monarch: "Monarque",
-    writer: "Écrivain",
-  };
   const meta = [item.artist, item.year].filter(Boolean).join(" · ");
-  const role = (item.types || []).map((type) => personLabels[type] || type).join(" · ");
+  const role = formatPersonRoles(parsePersonTypes(item.types));
   const img = item.thumb
     ? `<img src="${escapeHtml(item.thumb)}" alt="${escapeHtml(item.title)}" class="thumb-img" loading="${eager ? "eager" : "lazy"}" decoding="async" fetchpriority="${eager ? "high" : "low"}" width="400" height="400" />`
     : `<span class="thumb-empty"><img src="/fleur-de-lys.svg" alt="" width="40" height="40" class="size-10 opacity-40" /><span>Pas d’image</span></span>`;
@@ -192,7 +187,7 @@ export function initCatalog(opts: Options) {
   });
 
   const initialTypes = new URLSearchParams(location.search).get("types") || "";
-  for (const type of initialTypes.split(",").filter(Boolean)) {
+  for (const type of parsePersonTypes(initialTypes)) {
     const btn = document.querySelector<HTMLButtonElement>(`.type-filter[data-type="${CSS.escape(type)}"]`);
     if (btn) btn.setAttribute("aria-pressed", "true");
   }
@@ -200,7 +195,10 @@ export function initCatalog(opts: Options) {
   fetch(opts.jsonUrl)
     .then((res) => res.json())
     .then((data) => {
-      items = data.items || [];
+      items = (data.items || []).map((item: CatalogItem) => ({
+        ...item,
+        types: parsePersonTypes(item.types),
+      }));
       render();
     })
     .catch(() => {});

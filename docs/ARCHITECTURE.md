@@ -14,6 +14,8 @@ Literae privilégie la génération statique. Directus est une source de build, 
 
 La liste des traductions est lue dans SQLite pendant le build, enrichie par `src/lib/bible-translations.ts`, puis sérialisée dans les propriétés de l’îlot. L’analyse des références bibliques se fait directement dans le navigateur. Une seule route ouvre donc `bible.db` à l’exécution.
 
+L’ordre des livres et la longueur des chapitres sont également extraits au build. Ce petit index, sans texte biblique, permet au comparateur de calculer les passages précédent et suivant si l’API déployée ne renvoie pas encore le champ `navigation`. Les destinations renvoyées par l’API restent prioritaires lorsqu’elles sont présentes.
+
 ## Mise à jour des contenus
 
 Les listes et les fiches issues de Directus sont figées à chaque build. Après une modification du CMS, un nouveau `npm run build` publie le nouvel état. Les URLs d’assets Directus restent distantes afin de conserver les transformations d’images.
