@@ -240,7 +240,7 @@
             savePrefs();
           }}
         />
-        <span>Aligner les versets</span>
+        <span>Aligner</span>
       </label>
 
       <div class="loading-mark" aria-live="polite">
@@ -373,24 +373,20 @@
   }
 
   .controls-top {
-    display: grid;
-    grid-template-areas: "reference size count align loading";
-    grid-template-columns: minmax(12rem, 24rem) auto auto minmax(0, 1fr) 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.25rem;
-    align-items: end;
+    align-items: flex-end;
   }
 
   .reference-field {
-    grid-area: reference;
-    min-width: 0;
+    flex: 1 1 14rem;
+    min-width: min(100%, 14rem);
   }
 
-  .text-size-control {
-    grid-area: size;
-  }
-
+  .text-size-control,
   .column-count {
-    grid-area: count;
+    flex: none;
   }
 
   label,
@@ -489,7 +485,7 @@
   }
 
   .align-toggle {
-    grid-area: align;
+    flex: none;
     display: flex;
     height: var(--control-height);
     align-items: center;
@@ -508,7 +504,7 @@
   }
 
   .loading-mark {
-    grid-area: loading;
+    flex: none;
     display: grid;
     width: 1.5rem;
     height: var(--control-height);
@@ -541,13 +537,14 @@
 
   .passage-navigation {
     display: grid;
-    grid-template-columns: 1fr minmax(12rem, auto) 1fr;
-    gap: 1rem;
-    align-items: center;
-    padding: 2.3rem 0 1.5rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
+    padding: 2.3rem 0 0.25rem;
   }
 
   .passage-navigation > div {
+    grid-column: 1 / -1;
+    grid-row: 1;
     text-align: center;
   }
 
@@ -567,10 +564,12 @@
   }
 
   .passage-navigation button {
+    grid-row: 2;
     display: flex;
     min-width: 2.75rem;
     min-height: 2.75rem;
-    align-items: center;
+    align-items: flex-end;
+    padding-bottom: 0.25rem;
     gap: 0.5rem;
     color: var(--text-muted);
     font-family: var(--type-ui);
@@ -692,9 +691,9 @@
 
   .verse {
     display: grid;
-    grid-template-columns: 1.7rem minmax(0, 1fr);
-    gap: 0.7rem;
-    padding: 0.72rem clamp(1rem, 2.2vw, 1.8rem);
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 0.3rem;
+    padding: 0.72rem 0.4rem 0.72rem 0.25rem;
     transition: background 120ms ease;
   }
 
@@ -709,11 +708,12 @@
   }
 
   .verse-number {
+    min-width: 3ch;
     padding-top: 0.18rem;
     color: var(--gold);
     font-family: var(--type-ui);
     font-size: 0.62rem;
-    text-align: right;
+    text-align: left;
     user-select: none;
   }
 
@@ -752,13 +752,7 @@
 
   @media (max-width: 1000px) {
     .controls-top {
-      grid-template-areas: "reference size count" "align align loading";
-      grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 0.75rem 1rem;
-    }
-
-    .align-toggle {
-      height: auto;
     }
 
     .translation-pickers {
@@ -818,10 +812,11 @@
 
     .verse {
       display: block;
-      padding: 0.5rem clamp(0.2rem, 0.8vw, 0.6rem);
+      padding: 0.5rem 0.25rem;
     }
 
     .verse-number {
+      min-width: 0;
       float: left;
       margin-right: 0.35em;
       padding-top: 0.2em;
@@ -840,8 +835,6 @@
     }
 
     .controls-top {
-      grid-template-areas: "reference size" "count align";
-      grid-template-columns: minmax(0, 1fr) auto;
       gap: 0.75rem 0.5rem;
     }
 
@@ -850,7 +843,6 @@
     }
 
     .align-toggle {
-      justify-self: end;
       gap: 0.3rem;
       font-size: 0.63rem;
     }
@@ -866,7 +858,6 @@
     }
 
     .passage-navigation {
-      grid-template-columns: auto 1fr auto;
       padding-top: 1.7rem;
     }
 
