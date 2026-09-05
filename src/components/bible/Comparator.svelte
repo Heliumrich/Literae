@@ -544,7 +544,7 @@
 
   .passage-navigation,
   .reading-columns {
-    max-width: calc(var(--column-count) * 34rem);
+    max-width: max(68rem, calc(var(--column-count) * 34rem));
     margin-inline: auto;
   }
 
