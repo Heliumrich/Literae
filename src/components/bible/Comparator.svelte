@@ -278,7 +278,7 @@
           >
             {#each translations as translation}
               <option value={translation.id}>
-                {translation.name_short}{translation.date_label ? ` · ${translation.date_label}` : ''}
+                {translation.name_short}
               </option>
             {/each}
           </select>
