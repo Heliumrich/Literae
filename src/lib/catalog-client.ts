@@ -108,7 +108,7 @@ export function initCatalog(opts: Options) {
       types.length === 0 || types.some((type) => item.types?.includes(type)),
     );
     const list = opts.kind === "artwork"
-      ? alternateArtists(filtered, (item) => item.artistKey || item.artist || "unknown")
+      ? alternateArtists(filtered, (item) => item.artistKey || item.artist || "unknown", (item) => item.artist)
       : filtered;
     const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
     if (page > pages) page = pages;

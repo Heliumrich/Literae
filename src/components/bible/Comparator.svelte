@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { formatRefLabel, parseReference } from '../../lib/bible-ref';
-  import type { BibleTranslation } from '../../lib/bible-translations';
+  import { BIBLE_DATA_VERSION, restoreTranslationIds, type BibleTranslation } from '../../lib/bible-translations';
   import { getBibleNavigation, type BibleCatalogBook } from '../../lib/bible-navigation';
   import PassagePicker from './PassagePicker.svelte';
 
@@ -58,7 +58,7 @@
         const data = JSON.parse(saved);
         ref = data.ref ?? ref;
         numCols = Math.min(4, Math.max(1, data.numCols ?? 2));
-        selectedIds = Array.isArray(data.selectedIds) ? data.selectedIds : [];
+        selectedIds = restoreTranslationIds(data, translations);
         align = data.align ?? true;
         if (typeof data.textScale === 'number' && Number.isFinite(data.textScale)) {
           textScale = Math.min(1.6, Math.max(0.7, data.textScale));
@@ -96,7 +96,9 @@
   function savePrefs() {
     if (!ready) return;
     localStorage.setItem('bible-comparator', JSON.stringify({
-      ref, numCols, selectedIds, align, textScale
+      ref, numCols, selectedIds,
+      selectedCodes: selectedIds.map(id => translations.find(translation => translation.id === id)?.code),
+      align, textScale
     }));
   }
 
@@ -138,6 +140,7 @@
       }
 
       const params = new URLSearchParams({
+        db: BIBLE_DATA_VERSION,
         book: parsed.book,
         chapter: String(parsed.chapter)
       });

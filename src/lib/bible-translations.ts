@@ -16,6 +16,25 @@ export type TranslationRecord = {
 
 export type BibleTranslation = TranslationRecord & TranslationEditorialMeta;
 
+// Also versions verse URLs so browser caches cannot reuse data from an older DB.
+export const BIBLE_DATA_VERSION = "1.1.0";
+
+const LEGACY_TRANSLATION_CODES: Record<number, string> = {
+  1: "BDT", 2: "VUL", 3: "FIL", 4: "CRA",
+};
+
+/** Persist stable codes; numeric IDs were reassigned by release 1.1.0. */
+export function restoreTranslationIds(
+  saved: { selectedCodes?: unknown; selectedIds?: unknown },
+  translations: TranslationRecord[],
+): number[] {
+  const codes = Array.isArray(saved.selectedCodes) ? saved.selectedCodes
+    : Array.isArray(saved.selectedIds)
+      ? saved.selectedIds.map(id => LEGACY_TRANSLATION_CODES[id]) : [];
+  return codes.map(code => translations.find(translation => translation.code === code)?.id)
+    .filter((id): id is number => id !== undefined);
+}
+
 /**
  * Couche curatoriale temporaire.
  *
@@ -24,6 +43,22 @@ export type BibleTranslation = TranslationRecord & TranslationEditorialMeta;
  * utilisable grâce au fallback de l’API.
  */
 export const TRANSLATION_EDITORIAL_META: Record<string, TranslationEditorialMeta> = {
+  GLA: {
+    date_label: "1905",
+    authors_label: "Jean-Baptiste Glaire ; Fulcran Grégoire Vigouroux",
+    source_label: "Vulgate",
+    language_label: "Français",
+    tradition_label: "Catholique",
+    notice: "",
+  },
+  SAC: {
+    date_label: "1855",
+    authors_label: "Louis-Isaac Lemaistre de Sacy",
+    source_label: "Vulgate",
+    language_label: "Français",
+    tradition_label: "Catholique",
+    notice: "",
+  },
   BDT: {
     date_label: "1843 · éd. illustrée 1866",
     authors_label: "J.-J. Bourassé & P.-D. Janvier",

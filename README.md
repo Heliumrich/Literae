@@ -96,7 +96,7 @@ Seuls les éléments dont le statut est `published` sont intégrés. Les collect
 
 Les images restent servies par Directus avec les transformations `thumbnail`, `medium`, `large` et `xlarge`. Le fichier original n’est demandé que depuis la visionneuse lorsque **Qualité originale** est activée.
 
-Le catalogue des œuvres alterne les artistes : une œuvre de chacun, puis la suivante, jusqu’à épuisement de toutes les œuvres. Cet ordre est calculé au build et conservé dans le JSON statique ; les résultats filtrés sont également alternés avant pagination. Les vignettes présentent l’œuvre entière dans un cadre carré.
+Le catalogue des œuvres alterne les artistes dans l’ordre alphabétique de leur nom affiché (A à Z, tri français) : une œuvre de chacun, puis la suivante, jusqu’à épuisement de toutes les œuvres. Les œuvres d’un même artiste restent classées par ajout récent. Cet ordre est calculé au build et conservé dans le JSON statique ; les résultats filtrés sont également triés et alternés avant pagination. Les vignettes présentent l’œuvre entière dans un cadre carré.
 
 La visionneuse navigable du catalogue et des collections d’une personnalité précharge uniquement l’image suivante dans la qualité sélectionnée. Depuis une fiche d’œuvre, elle utilise une vue épurée, sans légende ni navigation. Le bouton **Épique**, réservé aux œuvres attribuées à Gustave Doré, applique une courbe en S avec un filtre SVG côté navigateur ; les fichiers Directus et les téléchargements restent inchangés.
 

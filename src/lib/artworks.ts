@@ -1,7 +1,13 @@
 import { normalizeText } from "./catalog";
 
-/** Stable round-robin: keep every item, including the longest artist queues. */
-export function alternateArtists<T>(items: T[], artistKey: (item: NoInfer<T>) => string): T[] {
+const artistCollator = new Intl.Collator("fr", { sensitivity: "base", numeric: true });
+
+/** Alphabetical artist rounds; preserve each artist's works and their own order. */
+export function alternateArtists<T>(
+  items: T[],
+  artistKey: (item: NoInfer<T>) => string,
+  artistName: (item: NoInfer<T>) => string | null | undefined,
+): T[] {
   const groups = new Map<string, T[]>();
   for (const item of items) {
     const key = artistKey(item);
@@ -10,7 +16,12 @@ export function alternateArtists<T>(items: T[], artistKey: (item: NoInfer<T>) =>
     else groups.set(key, [item]);
   }
   const result: T[] = [];
-  let active = [...groups.values()];
+  let active = [...groups.entries()]
+    .sort(([keyA, a], [keyB, b]) =>
+      artistCollator.compare(artistName(a[0]) || "Artiste inconnu", artistName(b[0]) || "Artiste inconnu") ||
+      artistCollator.compare(keyA, keyB),
+    )
+    .map(([, works]) => works);
   for (let round = 0; active.length; round++) {
     const remaining: T[][] = [];
     for (const group of active) {
