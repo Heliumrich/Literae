@@ -7,7 +7,7 @@
 
   type Translation = BibleTranslation;
   type Verse = { verse: number; text: string };
-  type Column = { code: string; name: string; verses: Verse[] };
+  type Column = { code: string; name: string; verses: Verse[]; meta?: Translation };
   type NavTarget = { book: string; chapter: number; verse?: number | null };
   type Navigation = { prev: NavTarget | null; next: NavTarget | null };
 
@@ -28,6 +28,7 @@
   let nav: Navigation = { prev: null, next: null };
   let ready = false;
   let highlightedVerse: number | null = null;
+  let loadVersion = 0;
 
   // Shared grid tracks align the headers and, optionally, each verse. Include
   // missing verse numbers so that a gap in one edition cannot shift the rest.
@@ -118,12 +119,11 @@
     load();
   }
 
-  function metaFor(index: number) {
-    return translations.find((translation) => translation.id === selectedIds[index]);
-  }
-
   async function load() {
     if (!ready || !ref.trim() || selectedIds.length === 0) return;
+    const version = ++loadVersion;
+    // Match the API's deduplication and keep edition metadata with this response.
+    const requestedIds = [...new Set(selectedIds)];
     loading = true;
     error = '';
     savePrefs();
@@ -143,13 +143,17 @@
       });
       if (parsed.verse) params.set('verse', String(parsed.verse));
       if (parsed.verseEnd) params.set('verseEnd', String(parsed.verseEnd));
-      selectedIds.forEach(id => params.append('t', String(id)));
+      requestedIds.forEach(id => params.append('t', String(id)));
 
       const res = await fetch(`/api/bible/verses?${params}`);
       if (!res.ok) throw new Error('Passage indisponible');
       const data = await res.json();
+      if (version !== loadVersion) return;
 
-      columns = data.results ?? [];
+      columns = (data.results ?? []).map((column: Column, index: number) => ({
+        ...column,
+        meta: translations.find((translation) => translation.id === requestedIds[index]),
+      }));
       current = {
         book: data.book,
         chapter: data.chapter,
@@ -159,11 +163,12 @@
 
       nav = data.navigation ?? getBibleNavigation(initialNavigationBooks, current);
     } catch (e) {
+      if (version !== loadVersion) return;
       error = 'Le passage n’a pas pu être chargé.';
       columns = [];
       console.error(e);
     } finally {
-      loading = false;
+      if (version === loadVersion) loading = false;
     }
   }
 
@@ -307,8 +312,8 @@
         data-count={columns.length}
         style={`--column-count: ${columns.length}; --verse-count: ${Math.max(1, verseNumbers.length)}; --row-count: ${align ? Math.max(1, verseNumbers.length) + 1 : 2}`}
       >
-        {#each readingColumns as column, index}
-          {@const meta = metaFor(index)}
+        {#each readingColumns as column}
+          {@const meta = column.meta}
           <article class="translation-page">
             <header class="translation-header">
               <p class="translation-code">{column.code} · {meta?.language_label || 'Traduction'}</p>
