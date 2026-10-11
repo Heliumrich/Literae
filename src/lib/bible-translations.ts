@@ -60,7 +60,7 @@ export const TRANSLATION_EDITORIAL_META: Record<string, TranslationEditorialMeta
     notice: "",
   },
   BDT: {
-    date_label: "1843 · éd. illustrée 1866",
+    date_label: "1843",
     authors_label: "J.-J. Bourassé & P.-D. Janvier",
     source_label: "Vulgate clémentine",
     language_label: "Français",
@@ -70,12 +70,12 @@ export const TRANSLATION_EDITORIAL_META: Record<string, TranslationEditorialMeta
   },
   VUL: {
     date_label: "1592",
-    authors_label: "Tradition hiéronymienne",
-    source_label: "Vulgate sixto-clémentine",
+    authors_label: "Saint Jérôme ; Vetus Latina",
+    source_label: "Hébreu, araméen, grec ; Vetus Latina",
     language_label: "Latin",
     tradition_label: "Catholique",
     notice:
-      "Édition latine promulguée sous Clément VIII, longtemps texte biblique de référence de l’Église latine.",
+      "Édition sixto-clémentine de la Vulgate latine, promulguée sous Clément VIII en 1592. Elle repose principalement sur les traductions et révisions de saint Jérôme, avec des livres conservés de la Vetus Latina. Les sources varient selon les livres : hébreu, araméen et grec pour l’Ancien Testament ; grec et anciennes versions latines pour le Nouveau Testament. Le texte transmis a été revu pour l’édition romaine.",
   },
   FIL: {
     date_label: "1899",
@@ -109,6 +109,7 @@ const EMPTY_EDITORIAL_META: TranslationEditorialMeta = {
 export function enrichTranslation(row: TranslationRecord): BibleTranslation {
   return {
     ...row,
+    ...(row.code === "SAC" ? { name_short: "Bible de Port-Royal", name_full: "Bible de Port-Royal" } : {}),
     ...(TRANSLATION_EDITORIAL_META[row.code] || EMPTY_EDITORIAL_META),
   };
 }
