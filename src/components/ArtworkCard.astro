@@ -1,5 +1,6 @@
 ---
 import Thumb from "./Thumb.astro";
+import { isDoreArtwork } from "../lib/artworks";
 import {
   fileIdOf,
   getAssetURL,
@@ -30,6 +31,7 @@ const href = `${basePath}/${work.slug}`;
     fetchpriority={index < 8 ? "high" : "low"}
     zoom={Boolean(src)}
     data-lightbox
+    data-epic={String(isDoreArtwork(work))}
     data-alt={title}
     data-href={href}
     data-medium={getAssetURL(id, "medium") || ""}

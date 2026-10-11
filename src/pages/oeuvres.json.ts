@@ -6,13 +6,14 @@ import {
   fileIdOf,
 } from "../lib/directus";
 import { parseTags, searchHaystack, jsonItems } from "../lib/catalog";
+import { alternateArtists, artworkArtistKey, isDoreArtwork } from "../lib/artworks";
 
 export const prerender = true;
 
 export const GET: APIRoute = async () => {
-  const artworks = await fetchAllFromDirectus<any>(
-    "artworks?filter[status][_eq]=published&fields=id,slug,title_french,title_original,title_english,year,image,tags,artist.name,artist.slug&sort=-date_created",
-  );
+  const artworks = alternateArtists(await fetchAllFromDirectus<any>(
+    "artworks?filter[status][_eq]=published&fields=id,slug,title_french,title_original,title_english,year,image,tags,artist.id,artist.name,artist.slug&sort=-date_created,id",
+  ), artworkArtistKey);
 
   const items = artworks.map((work) => {
     const tags = parseTags(work.tags);
@@ -21,6 +22,8 @@ export const GET: APIRoute = async () => {
       href: `/oeuvres/${work.slug}`,
       title: getArtworkTitle(work),
       year: work.year ?? null,
+      artistKey: artworkArtistKey(work),
+      epic: isDoreArtwork(work),
       artist:
         work.artist && typeof work.artist === "object" ? work.artist.name : null,
       thumb: getAssetURL(fileIdOf(work.image), "thumbnail"),

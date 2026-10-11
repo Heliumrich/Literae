@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Fleur from "../../components/Fleur.astro";
+import { isDoreArtwork } from "../../lib/artworks";
 import {
   fetchAllFromDirectus,
   fileIdOf,
@@ -68,6 +69,11 @@ const titleOriginal =
                   fetchpriority="high"
                   decoding="async"
                   data-lightbox
+                  data-lightbox-mode="detail"
+                  data-epic={String(isDoreArtwork(work))}
+                  tabindex="0"
+                  role="button"
+                  aria-label={`Agrandir : ${title}`}
                   data-alt={title}
                   data-href={`/oeuvres/${slug}`}
                   data-medium={imageMedium || ""}

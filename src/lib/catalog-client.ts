@@ -1,4 +1,5 @@
 import { PAGE_SIZE } from "./catalog";
+import { alternateArtists } from "./artworks";
 import { formatPersonRoles, parsePersonTypes } from "./people";
 import { hydrateThumbs } from "./thumbs";
 import { setLightboxGallery } from "./lightbox";
@@ -23,6 +24,8 @@ export type CatalogItem = {
   subtitle?: string | null;
   year?: string | number | null;
   artist?: string | null;
+  artistKey?: string;
+  epic?: boolean;
   thumb: string | null;
   medium?: string | null;
   large?: string | null;
@@ -39,7 +42,7 @@ type Options = {
 };
 
 function lbAttrs(item: CatalogItem) {
-  return `data-lightbox data-alt="${escapeHtml(item.title)}" data-href="${escapeHtml(item.href)}" data-medium="${escapeHtml(item.medium || "")}" data-large="${escapeHtml(item.large || "")}" data-xlarge="${escapeHtml(item.xlarge || "")}" data-original="${escapeHtml(item.original || "")}"`;
+  return `data-lightbox data-epic="${item.epic === true}" data-alt="${escapeHtml(item.title)}" data-href="${escapeHtml(item.href)}" data-medium="${escapeHtml(item.medium || "")}" data-large="${escapeHtml(item.large || "")}" data-xlarge="${escapeHtml(item.xlarge || "")}" data-original="${escapeHtml(item.original || "")}"`;
 }
 
 function cardHtml(item: CatalogItem, kind: "artwork" | "artist", eager = false) {
@@ -101,9 +104,12 @@ export function initCatalog(opts: Options) {
 
   function render() {
     const types = selectedTypes();
-    const list = filterCatalog(items, search?.value || "", selectedTags(), mode).filter((item) =>
+    const filtered = filterCatalog(items, search?.value || "", selectedTags(), mode).filter((item) =>
       types.length === 0 || types.some((type) => item.types?.includes(type)),
     );
+    const list = opts.kind === "artwork"
+      ? alternateArtists(filtered, (item) => item.artistKey || item.artist || "unknown")
+      : filtered;
     const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
     if (page > pages) page = pages;
     const slice = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -127,6 +133,7 @@ export function initCatalog(opts: Options) {
           large: item.large,
           xlarge: item.xlarge,
           original: item.original,
+          epic: item.epic,
         })),
       );
     }

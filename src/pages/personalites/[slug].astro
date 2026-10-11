@@ -32,7 +32,7 @@ export async function getStaticPaths() {
       "artists?filter[status][_eq]=published&fields=*&sort=name",
     ),
     fetchAllFromDirectus<any>(
-      "artworks?filter[status][_eq]=published&fields=id,slug,title_original,title_french,title_english,year,image,artist.id,artist.name,depicted.artists_id.id&sort=-year",
+      "artworks?filter[status][_eq]=published&fields=id,slug,title_original,title_french,title_english,year,image,artist.id,artist.name,artist.slug,depicted.artists_id.id&sort=-year",
     ),
   ]);
 
@@ -151,7 +151,7 @@ const dates =
               </div>
               <p>{createdWorks.length} {createdWorks.length > 1 ? "œuvres" : "œuvre"}</p>
             </div>
-            <div class="catalog-grid">
+            <div class="catalog-grid" data-lightbox-gallery>
               {createdWorks.map((work: any, index: number) => (
                 <ArtworkCard work={work} index={index} />
               ))}
@@ -172,7 +172,7 @@ const dates =
               </div>
               <p>{depictedWorks.length} représentations</p>
             </div>
-            <div class="catalog-grid">
+            <div class="catalog-grid" data-lightbox-gallery>
               {depictedWorks.map((work: any, index: number) => (
                 <ArtworkCard work={work} index={index} />
               ))}

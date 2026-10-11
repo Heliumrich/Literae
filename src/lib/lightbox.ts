@@ -11,12 +11,18 @@ export type LightboxItem = {
   large?: string | null;
   xlarge?: string | null;
   original?: string | null;
+  epic?: boolean;
 };
 
 let gallery: LightboxItem[] = [];
+let catalogGallery: LightboxItem[] = [];
 let index = 0;
 let bound = false;
 let qualityMax = false;
+let epicEnabled = false;
+let detailMode = false;
+let preload: HTMLImageElement | null = null;
+let previousOverflow = "";
 let returnFocus: HTMLElement | null = null;
 
 function itemSrc(item: LightboxItem) {
@@ -39,12 +45,24 @@ function fromEl(el: HTMLElement): LightboxItem {
     large: el.dataset.large,
     xlarge: el.dataset.xlarge,
     original: el.dataset.original,
+    epic: el.dataset.epic === "true",
   };
 }
 
 export function setLightboxGallery(items: LightboxItem[]) {
-  gallery = items.filter((i) => i.large || i.medium || i.original);
+  catalogGallery = items.filter(hasImage);
 }
+
+function hasImage(item: LightboxItem) {
+  return Boolean(item.medium || item.large || item.xlarge || item.original);
+}
+
+// A sampled S-curve, evaluated by the browser's SVG filter rather than JS pixels.
+// Preserve black, white and midpoint; deepen shadows and lift highlights smoothly.
+const epicCurve = Array.from({ length: 33 }, (_, i) => {
+  const x = i / 32;
+  return (0.2 * x + 0.8 * x * x * (3 - 2 * x)).toFixed(5);
+}).join(" ");
 
 function ensureLightbox() {
   let root = document.getElementById("lightbox");
@@ -58,10 +76,20 @@ function ensureLightbox() {
   root.setAttribute("aria-label", "Visionneuse d’art");
   root.tabIndex = -1;
   root.innerHTML = `
+    <svg class="lightbox-filter" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs><filter id="lightbox-epic-curve" color-interpolation-filters="sRGB">
+        <feComponentTransfer>
+          <feFuncR type="table" tableValues="${epicCurve}" />
+          <feFuncG type="table" tableValues="${epicCurve}" />
+          <feFuncB type="table" tableValues="${epicCurve}" />
+        </feComponentTransfer>
+      </filter></defs>
+    </svg>
+    <div class="lightbox-tools">
+      <button type="button" class="lightbox-quality" aria-pressed="false">Qualité originale</button>
+      <button type="button" class="lightbox-epic" aria-pressed="false" hidden title="Accentuer les ombres et les lumières">Épique</button>
+    </div>
     <button type="button" class="lightbox-close" aria-label="Fermer">×</button>
-    <button type="button" class="lightbox-quality" aria-pressed="false">
-      <span>Qualité originale</span>
-    </button>
     <button type="button" class="lightbox-prev" aria-label="Œuvre précédente">‹</button>
     <img class="lightbox-img" alt="" />
     <button type="button" class="lightbox-next" aria-label="Œuvre suivante">›</button>
@@ -86,11 +114,15 @@ function ensureLightbox() {
     const quality = t.closest<HTMLButtonElement>(".lightbox-quality");
     if (quality) {
       qualityMax = !qualityMax;
-      quality.setAttribute("aria-pressed", String(qualityMax));
-      quality.classList.toggle("is-active", qualityMax);
       show();
       return;
     }
+    if (t.closest(".lightbox-epic")) {
+      epicEnabled = !epicEnabled;
+      show();
+      return;
+    }
+    if (t.closest(".lightbox-tools")) return;
     if (t.classList.contains("lightbox-prev")) {
       step(-1);
       return;
@@ -115,10 +147,19 @@ function show() {
   const prev = root.querySelector<HTMLElement>(".lightbox-prev");
   const next = root.querySelector<HTMLElement>(".lightbox-next");
   const quality = root.querySelector<HTMLButtonElement>(".lightbox-quality");
+  const epic = root.querySelector<HTMLButtonElement>(".lightbox-epic");
+  root.classList.toggle("lightbox-detail", detailMode);
   if (img) {
-    img.src = itemSrc(item);
+    const src = itemSrc(item);
+    // Install before src, including cache hits. Do not reload on effect toggles.
+    img.onload = preloadNext;
+    img.onerror = preloadNext;
+    if (img.getAttribute("src") !== src) img.src = src;
     img.alt = item.alt;
+    img.classList.toggle("is-epic", Boolean(item.epic && epicEnabled));
+    if (img.complete) preloadNext();
   }
+  if (cap) cap.hidden = detailMode;
   const link = root.querySelector<HTMLAnchorElement>(".lightbox-cap-link");
   if (link) {
     link.textContent = item.alt;
@@ -134,7 +175,7 @@ function show() {
   }
   const dl = root.querySelector<HTMLAnchorElement>(".lightbox-dl");
   if (dl) {
-    if (item.original) {
+    if (item.original && !detailMode) {
       dl.href = downloadUrl(item.original);
       dl.hidden = false;
     } else {
@@ -142,35 +183,57 @@ function show() {
       dl.hidden = true;
     }
   }
-  const many = gallery.length > 1;
+  const many = !detailMode && gallery.length > 1;
+  if (epic) {
+    epic.hidden = !item.epic;
+    epic.setAttribute("aria-pressed", String(Boolean(item.epic && epicEnabled)));
+  }
   if (quality) {
     quality.hidden = !item.original;
     quality.setAttribute("aria-pressed", String(qualityMax));
     quality.classList.toggle("is-active", qualityMax);
   }
-  prev?.classList.toggle("hidden", !many);
-  next?.classList.toggle("hidden", !many);
+  if (prev) prev.hidden = !many;
+  if (next) next.hidden = !many;
   root.hidden = false;
-  document.body.style.overflow = "hidden";
-  root.querySelector<HTMLButtonElement>(".lightbox-close")?.focus();
+  if (document.activeElement instanceof HTMLElement && document.activeElement.hidden) {
+    root.querySelector<HTMLButtonElement>(".lightbox-close")?.focus();
+  }
+}
+
+function preloadNext() {
+  if (detailMode || gallery.length < 2) return;
+  const src = itemSrc(gallery[(index + 1) % gallery.length]);
+  if (!src || preload?.getAttribute("src") === src) return;
+  // Keep only the next image alive. Original files are requested only on opt-in.
+  preload = new Image();
+  preload.decoding = "async";
+  preload.fetchPriority = "low";
+  preload.src = src;
 }
 
 export function openLightbox(el: HTMLElement) {
   returnFocus = el;
   const current = fromEl(el);
-  if (gallery.length > 1) {
-    const found = gallery.findIndex(
-      (item) =>
-        item.original === el.dataset.original ||
-        item.large === el.dataset.large ||
-        item.alt === el.getAttribute("data-alt"),
-    );
-    index = found >= 0 ? found : 0;
-  } else {
-    gallery = [current];
-    index = 0;
+  detailMode = el.dataset.lightboxMode === "detail";
+  const scope = el.closest("[data-lightbox-gallery]") ||
+    (!catalogGallery.length ? el.closest(".catalog-grid") : null);
+  gallery = detailMode ? [current] : scope
+    ? [...scope.querySelectorAll<HTMLElement>("[data-lightbox]")].map(fromEl).filter(hasImage)
+    : catalogGallery;
+  index = gallery.findIndex((item) =>
+    Boolean(current.original && item.original === current.original) ||
+    Boolean(current.large && item.large === current.large) ||
+    Boolean(current.href && item.href === current.href),
+  );
+  if (index < 0) {
+    // Also works before the static catalog has loaded, or on a standalone card.
+    gallery = [current]; index = 0;
   }
+  previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
   show();
+  ensureLightbox().querySelector<HTMLButtonElement>(".lightbox-close")?.focus();
 }
 
 function clickOnPaintedImage(img: HTMLImageElement, e: MouseEvent) {
@@ -187,7 +250,7 @@ function clickOnPaintedImage(img: HTMLImageElement, e: MouseEvent) {
 }
 
 function step(delta: number) {
-  if (gallery.length < 2) return;
+  if (detailMode || gallery.length < 2) return;
   index = (index + delta + gallery.length) % gallery.length;
   show();
 }
@@ -197,8 +260,13 @@ export function closeLightbox() {
   if (!root) return;
   root.hidden = true;
   const img = root.querySelector<HTMLImageElement>(".lightbox-img");
-  if (img) img.src = "";
-  document.body.style.overflow = "";
+  if (img) {
+    img.onload = img.onerror = null;
+    img.removeAttribute("src");
+  }
+  preload = null;
+  gallery = [];
+  document.body.style.overflow = previousOverflow;
   returnFocus?.focus();
   returnFocus = null;
 }
@@ -208,11 +276,19 @@ export function initLightbox() {
   if (bound) return;
   bound = true;
   document.addEventListener("keydown", (e) => {
+    const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox][role="button"]');
+    if (trigger && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      openLightbox(trigger);
+      return;
+    }
     const root = document.getElementById("lightbox");
     if (!root || root.hidden) return;
     if (e.key === "Escape") closeLightbox();
-    if (e.key === "ArrowLeft") step(-1);
-    if (e.key === "ArrowRight") step(1);
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      step(e.key === "ArrowLeft" ? -1 : 1);
+    }
     if (e.key === "Tab") {
       const focusable = [...root.querySelectorAll<HTMLElement>(
         'button:not([hidden]), a[href]:not([hidden])',
