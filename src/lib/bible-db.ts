@@ -1,6 +1,11 @@
 import Database from "better-sqlite3";
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { resolveBibleSource } from './bible-source.mjs';
+
+// better-sqlite3 reads this when its native binding is first loaded.
+// Enable SQLite URI parameters so immutable=1 is actually applied.
+process.env.SQLITE_USE_URI = '1';
 
 declare const __LITERAE_BIBLE_SOURCE__: ReturnType<typeof resolveBibleSource>;
 
@@ -13,9 +18,11 @@ export const getBibleSource = () => source;
 export const resolveDbPath = () => source.path;
 
 export function getBibleDb() {
-  const dbPath = resolveDbPath();
-  // SQLITE_OPEN_READONLY: this connection cannot write to bible.db.
-  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  const uri = pathToFileURL(resolveDbPath());
+  uri.searchParams.set('mode', 'ro');
+  uri.searchParams.set('immutable', '1');
+  // Published snapshots never change: no journal, shared-memory file or SQLite locks.
+  const db = new Database(uri.href, { readonly: true, fileMustExist: true });
   db.pragma("query_only = ON");
   return db;
 }
