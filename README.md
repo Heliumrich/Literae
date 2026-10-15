@@ -77,7 +77,7 @@ Toutes les variables sont facultatives dans la configuration actuelle.
 |---|---|---|
 | `DIRECTUS_URL` | `https://api.literae.ch` | URL publique de Directus |
 | `DIRECTUS_TOKEN` | — | Jeton de lecture si le rôle public ne suffit pas |
-| `BIBLE_DB` | Snapshot French-Bibles géré | Copie personnalisée ; désactive la synchronisation automatique |
+| `BIBLE_DB` | Snapshot French-Bibles géré | Copie personnalisée choisie au build ; désactive la synchronisation automatique |
 | `PUBLIC_MAIN_SITE_URL` | `https://literae.ch` | Origine publique du site principal |
 | `PUBLIC_ART_SITE_URL` | `https://art.literae.ch` | Origine publique de la galerie |
 
@@ -118,7 +118,7 @@ Voir [PWA : utilisation, déploiement et tests](docs/PWA.md).
 
 `npm run build` récupère automatiquement `bible.db` depuis la branche `main` de [French-Bibles](https://github.com/Heliumrich/French-Bibles) et prépare un snapshot versionné dans `data/french-bibles/`. Le tag réel fournit la version affichée ; le SHA-256 du fichier identifie son contenu et renouvelle les caches, sans constante à modifier à la main.
 
-Les anciennes copies restent disponibles pour les serveurs en cours et les retours arrière. Le fichier historique `data/bible.db` et ses fichiers SQLite annexes restent intacts. `BIBLE_DB` permet de conserver une copie personnalisée et désactive cette synchronisation. Voir [gestion de la base et déploiement VPS](data/README.md).
+Les anciennes copies restent disponibles pour les serveurs en cours et les retours arrière. Après synchronisation et reconstruction, le fichier historique `data/bible.db` n’est nécessaire ni au site classique ni à la PWA. Les deux utilisent la même source ; le build en exporte une copie statique pour le téléchargement sur téléphone. Le serveur ouvre uniquement la source choisie au build, en mode SQLite immutable, et en indique le chemin dans ses logs. `BIBLE_DB` permet de choisir une copie personnalisée au build et désactive la synchronisation. Voir [gestion de la base et déploiement VPS](data/README.md).
 
 La PWA continue à proposer séparément les nouvelles releases à l’utilisateur. Une mise à jour du serveur ou de l’interface ne force jamais le téléchargement de la base sur le téléphone.
 
