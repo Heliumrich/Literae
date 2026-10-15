@@ -18,6 +18,8 @@ Dans la PWA installée uniquement, une petite requête vers `/api/bible/verses?p
 
 La version de release (par exemple `2.1.1`) est affichée. Le SHA-256 de l’asset `bible.db` identifie le contenu : un simple changement d’étiquette sans changement du fichier ne déclenche aucun téléchargement. La taille exacte vient des métadonnées de l’asset GitHub. Les dernières métadonnées vérifiées et leur date sont conservées localement ; les erreurs réseau ou limites de l’API publique ne suppriment jamais la Bible locale.
 
+Si une ancienne version du lecteur avait enregistré une mauvaise étiquette (notamment `1.1.0`), la vérification corrige les métadonnées locales lorsque le SHA-256 et la taille correspondent à la release. Cette correction est conservée dans IndexedDB sans retélécharger la base. Une empreinte différente conserve le mécanisme habituel de mise à jour proposée à l’utilisateur.
+
 Un avis intégré au lecteur présente la version disponible, la taille en Mo, **Mettre à jour la Bible** et **Plus tard**. Il s’adapte aux orientations portrait et paysage. Reporter n’efface pas la mise à jour : le bouton reste dans le menu et l’avis revient à la prochaine ouverture ou au retour au premier plan tant que la copie n’a pas été mise à jour. Aucun changelog n’est affiché et aucune permission de notification système n’est demandée.
 
 Le téléphone télécharge depuis `/api/bible/verses?pwa=download&asset=<id>`, sur le même domaine que Literae. Node vérifie que l’asset est bien `bible.db` dans le dépôt attendu, puis suit les redirections GitHub côté serveur et relaie le flux sans charger le fichier entier en RAM. Le téléchargement ne dépend donc plus des autorisations CORS ou des redirections inter-domaines du navigateur. Aucun jeton GitHub n’est nécessaire. L’annulation du téléphone annule aussi le transfert amont ; elle ne bloque pas un téléchargement ultérieur. Les anciennes métadonnées enregistrées avec une URL GitHub sont automatiquement converties vers le relais local. La taille, le SHA-256, l’intégrité SQLite et les colonnes attendues sont vérifiés avant de remplacer la copie précédente. Une release dont le schéma est incompatible est refusée en conservant l’ancienne copie. Les identifiants des traductions sont retrouvés par leur code stable.
@@ -47,7 +49,7 @@ Le build ajoute à `dist/client` :
 
 - `/scriptorium/manifest.webmanifest`, les icônes et `/scriptorium/sw.js` ;
 - `/scriptorium/bible-worker-<hash>.js` et le moteur WASM dans `/_astro` ;
-- `/scriptorium/donnees/<sha256>.db`, copie statique de la base sélectionnée par `BIBLE_DB` ou de `data/bible.db`.
+- `/scriptorium/donnees/<sha256>.db`, copie statique du snapshot French-Bibles sélectionné au build (ou de la copie personnalisée `BIBLE_DB`). La version affichée vient du tag Git réel ; les URLs et caches utilisent le SHA-256 du fichier, sans version figée dans le code. Voir [synchronisation serveur](../data/README.md).
 
 La base source ne change pas. Son contenu devient téléchargeable publiquement pour permettre le mode hors ligne. La seule route serveur reste `/api/bible/verses` : les paramètres `pwa=latest` et `pwa=download&asset=<id>` sélectionnent le relais, isolé dans les modules PWA. Les requêtes de versets gardent leur comportement habituel. Aucun nouveau chemin n’est à ajouter au reverse proxy existant, et aucun service permanent ou appel Directus n’est ajouté.
 

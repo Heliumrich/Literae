@@ -69,11 +69,13 @@
         const previous = cachedRelease();
         latest = previous?.bible ?? null;
         checkedAt = previous?.checkedAt ?? 0;
-        void checkForUpdate();
       }
       shell = prepareShell();
       void shell.catch(error => { problem = error.message; });
-      void offlineStatus().then(value => { saved = value; }).catch(() => { problem = 'Le stockage local est indisponible dans ce navigateur.'; });
+      void offlineStatus().then(value => {
+        saved = value;
+        if (standalone) void checkForUpdate();
+      }).catch(() => { problem = 'Le stockage local est indisponible dans ce navigateur.'; });
       void navigator.storage?.persisted?.().then(value => { persistent = value; }).catch(() => {});
     }
     return () => {
@@ -93,6 +95,9 @@
     try {
       const checked = await checkBibleRelease();
       latest = checked.bible; checkedAt = checked.checkedAt; checkMessage = '';
+      // Older builds stored a fixed "1.1.0" label even for a more recent file.
+      // A matching digest lets us repair that label without transferring the DB.
+      saved = await offlineStatus(checked.bible);
     } catch {
       checkMessage = 'Vérification impossible pour le moment. Votre Bible locale reste utilisable.';
     } finally { checking = false; }

@@ -3,7 +3,7 @@ import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { readBiblePassage, type BibleReader } from '../bible-query';
 import { releaseDownloadUrl } from './releases';
-import { storedBible } from './storage';
+import { storedBible, updateBibleMetadata } from './storage';
 import type { WorkerRequest, StoredBible } from './types';
 
 let sql: Promise<SqlJsStatic> | undefined;
@@ -47,7 +47,13 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
   try {
     await (initialized ??= initialize());
     let result: unknown;
-    if (type === 'status') result = metadata();
+    if (type === 'status') {
+      if (!download && data.metadata && saved?.sha256 === data.metadata.sha256 && saved.version !== data.metadata.version) {
+        const refreshed = await updateBibleMetadata(data.metadata);
+        if (refreshed?.sha256 === saved?.sha256) saved = refreshed;
+      }
+      result = metadata();
+    }
     if (type === 'cancel') download?.abort();
     if (type === 'remove') {
       if (download) throw new Error('Annulez d’abord le téléchargement.');

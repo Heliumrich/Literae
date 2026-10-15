@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { resolveBibleSource } from '../../src/lib/bible-source.mjs';
 
 const route = '/scriptorium/comparateur';
 async function open(page: Page) {
@@ -116,10 +117,10 @@ test('une mise à jour échouée conserve la copie précédente et ses passages 
     });
   });
   await context.addInitScript(() => Object.defineProperty(navigator, 'standalone', {get: () => true}));
-  const bytes = readFileSync('data/bible.db');
+  const bytes = readFileSync(resolveBibleSource().path);
   await context.route('**/api/bible/verses?pwa=latest', route => route.fulfill({
     headers: {'Access-Control-Allow-Origin':'*'},
-    json: {version:'1.1.0',bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'/api/bible/verses?pwa=download&asset=999'},
+    json: {version:'2.1.1',bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'/api/bible/verses?pwa=download&asset=999'},
   }));
   await page.reload();
   await page.getByText('Emporter le comparateur',{exact:true}).click();

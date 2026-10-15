@@ -28,5 +28,5 @@ export function offlineRequest<T>(type: WorkerRequest['type'], payload: Partial<
     catch (error) { pending.delete(id); reject(error); }
   });
 }
-export const offlineStatus = () => offlineRequest<OfflineBible | null>('status');
+export const offlineStatus = (metadata?: OfflineBible) => offlineRequest<OfflineBible | null>('status', {metadata});
 export const offlineQuery = (params: URLSearchParams, codes: string[]) => offlineRequest<ReturnType<typeof readBiblePassage>>('query', {params: params.toString(), codes});

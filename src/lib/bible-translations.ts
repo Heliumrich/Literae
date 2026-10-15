@@ -16,9 +16,6 @@ export type TranslationRecord = {
 
 export type BibleTranslation = TranslationRecord & TranslationEditorialMeta;
 
-// Also versions verse URLs so browser caches cannot reuse data from an older DB.
-export const BIBLE_DATA_VERSION = "1.1.0";
-
 const LEGACY_TRANSLATION_CODES: Record<number, string> = {
   1: "BDT", 2: "VUL", 3: "FIL", 4: "CRA",
 };

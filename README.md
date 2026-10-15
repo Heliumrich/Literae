@@ -7,7 +7,7 @@ Literae est un atelier catholique francophone pour lire la Sainte Écriture, con
 - Site principal : [literae.ch](https://literae.ch)
 - Galerie : [art.literae.ch](https://art.literae.ch)
 - Données éditoriales : [api.literae.ch](https://api.literae.ch)
-- Source de la base biblique : [FR-Bibles_JSON](https://github.com/Heliumrich/FR-Bibles_JSON)
+- Source de la base biblique : [French-Bibles](https://github.com/Heliumrich/French-Bibles)
 
 ## Ce que contient le projet
 
@@ -39,8 +39,8 @@ Le script `npm run check:static` protège cette frontière : il échoue si une s
 ## Prérequis
 
 - Node.js `22.12` ou plus récent ;
-- npm ;
-- `data/bible.db`, inclus dans le projet ou remplacé par une base compatible issue de [FR-Bibles_JSON](https://github.com/Heliumrich/FR-Bibles_JSON).
+- npm et Git ;
+- un accès à GitHub pour synchroniser automatiquement la base [French-Bibles](https://github.com/Heliumrich/French-Bibles) au build.
 
 ## Installation locale
 
@@ -49,6 +49,7 @@ git clone https://github.com/Heliumrich/Literae.git
 cd Literae
 npm ci
 cp .env.example .env
+npm run bible:sync
 npm run dev
 ```
 
@@ -63,7 +64,8 @@ En développement, les liens entre le site principal et la galerie restent locau
 | `npm run dev` | Serveur de développement |
 | `npm run check` | TypeScript strict et contrôle de la frontière statique |
 | `npm run check:static` | Contrôle architectural seul |
-| `npm run build` | Génération du site et du serveur minimal |
+| `npm run build` | Synchronisation de French-Bibles, puis génération du site et du serveur minimal |
+| `npm run bible:sync` | Préparation de la dernière base sans reconstruire le site |
 | `npm run preview` | Prévisualisation du résultat de build |
 | `npm start` | Démarrage de `dist/server/entry.mjs` |
 
@@ -75,7 +77,7 @@ Toutes les variables sont facultatives dans la configuration actuelle.
 |---|---|---|
 | `DIRECTUS_URL` | `https://api.literae.ch` | URL publique de Directus |
 | `DIRECTUS_TOKEN` | — | Jeton de lecture si le rôle public ne suffit pas |
-| `BIBLE_DB` | `data/bible.db` | Chemin alternatif vers la base SQLite |
+| `BIBLE_DB` | Snapshot French-Bibles géré | Copie personnalisée ; désactive la synchronisation automatique |
 | `PUBLIC_MAIN_SITE_URL` | `https://literae.ch` | Origine publique du site principal |
 | `PUBLIC_ART_SITE_URL` | `https://art.literae.ch` | Origine publique de la galerie |
 
@@ -102,7 +104,7 @@ La visionneuse navigable du catalogue et des collections d’une personnalité p
 
 ## Comparateur sur smartphone et hors ligne
 
-Le comparateur est une PWA installable : invitation native sur Android lorsque le navigateur le permet, instructions Safari sur iPhone/iPad. Le panneau **Emporter le comparateur** permet de télécharger toutes les traductions (52,5 Mo actuellement), suivre le transfert et supprimer la copie locale. Après téléchargement, le lecteur fonctionne sans connexion, y compris pour des passages jamais consultés.
+Le comparateur est une PWA installable : invitation native sur Android lorsque le navigateur le permet, instructions Safari sur iPhone/iPad. Le panneau **Emporter le comparateur** permet de télécharger toutes les traductions (environ 51 Mo pour la version 2.1.1), suivre le transfert et supprimer la copie locale. Après téléchargement, le lecteur fonctionne sans connexion, y compris pour des passages jamais consultés.
 
 Le seul panneau **Emporter le comparateur** regroupe le téléchargement puis l’installation. Le téléchargement fonctionne aussi directement dans l’application installée ; aucune étape préalable dans le navigateur n’est obligatoire.
 
@@ -114,14 +116,11 @@ Voir [PWA : utilisation, déploiement et tests](docs/PWA.md).
 
 ## Base biblique
 
-`data/bible.db` est ouverte en lecture seule sur le serveur. Le comparateur peut aussi télécharger une copie complète sur l’appareil pour fonctionner hors ligne. Les métadonnées éditoriales encore absentes de la base sont temporairement complétées dans `src/lib/bible-translations.ts`.
+`npm run build` récupère automatiquement `bible.db` depuis la branche `main` de [French-Bibles](https://github.com/Heliumrich/French-Bibles), vérifie son intégrité et prépare un snapshot versionné dans `data/french-bibles/`. Le tag réel fournit la version affichée ; le SHA-256 du fichier identifie son contenu et renouvelle les caches, sans constante à modifier à la main.
 
-Pour remplacer la base :
+Les anciennes copies restent disponibles pour les serveurs en cours et les retours arrière. Le fichier historique `data/bible.db` et ses fichiers SQLite annexes restent intacts. `BIBLE_DB` permet de conserver une copie personnalisée et désactive cette synchronisation. Voir [gestion de la base et déploiement VPS](data/README.md).
 
-1. copiez le nouveau fichier vers `data/bible.db`, ou définissez `BIBLE_DB` ;
-2. lancez `npm run check` ;
-3. lancez `npm run build` ;
-4. contrôlez le comparateur sur plusieurs livres et traductions.
+La PWA continue à proposer séparément les nouvelles releases à l’utilisateur. Une mise à jour du serveur ou de l’interface ne force jamais le téléchargement de la base sur le téléphone.
 
 ## Organisation du dépôt
 
@@ -169,10 +168,13 @@ Le build produit :
 - `dist/server`, qui contient le serveur Node minimal nécessaire au seul endpoint SQLite.
 
 ```bash
+git pull
+npm ci
 npm run build
+# Redémarrer le service Node existant, ou lancer :
 npm start
 ```
 
-Le processus doit être lancé depuis la racine du projet, ou recevoir `BIBLE_DB`, afin que la base SQLite soit trouvée. Après chaque changement dans Directus, reconstruisez puis redéployez le site.
+Le processus doit être lancé depuis la racine du projet. Le build inclut le chemin du snapshot SQLite utilisé pour générer le comparateur ; reconstruire puis redémarrer applique une nouvelle base. Un `git pull` seul ne déclenche pas le build. Après chaque changement dans Directus, reconstruisez puis redéployez le site.
 
 La CI GitHub exécute automatiquement les contrôles TypeScript, la vérification de la frontière statique et le build sur les pushes vers `main` et les pull requests.

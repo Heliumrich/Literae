@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "bible:sync": "node scripts/sync-bible.mjs",
+    "prebuild": "npm run bible:sync",
     "build": "npm run check:static && astro build",
     "check": "npm run check:types && npm run check:static",
     "check:types": "astro sync && tsc --noEmit",

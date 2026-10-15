@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { formatRefLabel, parseReference } from '../../lib/bible-ref';
-  import { BIBLE_DATA_VERSION, restoreTranslationIds, type BibleTranslation } from '../../lib/bible-translations';
+  import { restoreTranslationIds, type BibleTranslation } from '../../lib/bible-translations';
   import { getBibleNavigation, type BibleCatalogBook } from '../../lib/bible-navigation';
   import OfflinePanel from './OfflinePanel.svelte';
   import { isInstalledComparator } from '../../lib/offline/display-mode';
@@ -146,7 +146,7 @@
       }
 
       const params = new URLSearchParams({
-        db: BIBLE_DATA_VERSION,
+        db: offlineBible.sha256,
         book: parsed.book,
         chapter: String(parsed.chapter)
       });

@@ -14,6 +14,9 @@ coverage/
 *.db-shm
 *.db-wal
 
+# Snapshots French-Bibles et cache Git gérés par bible:sync
+/data/french-bibles/
+
 # Journaux
 *.log
 npm-debug.log*

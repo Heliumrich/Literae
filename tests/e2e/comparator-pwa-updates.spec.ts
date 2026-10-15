@@ -4,11 +4,13 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync, readdir
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
+import { resolveBibleSource } from '../../src/lib/bible-source.mjs';
 
 const PAGE = '/scriptorium/comparateur';
 const LATEST = '**/api/bible/verses?pwa=latest';
 const ASSET = '**/api/bible/verses?pwa=download&asset=421';
-const original = readFileSync('data/bible.db');
+const source = resolveBibleSource();
+const original = readFileSync(source.path);
 const originalHash = createHash('sha256').update(original).digest('hex');
 let directory: string;
 let updated: Buffer;
@@ -17,7 +19,7 @@ let updatedHash: string;
 test.beforeAll(() => {
   directory = mkdtempSync(join(tmpdir(), 'literae-pwa-test-'));
   const path = join(directory, 'bible.db');
-  copyFileSync('data/bible.db', path);
+  copyFileSync(source.path, path);
   const db = new Database(path);
   try {
     // Exercise stable translation codes against a real database with new IDs.
@@ -40,12 +42,12 @@ async function baseline(page: Page) {
   await page.getByRole('button', { name: 'Télécharger la Bible', exact: true }).click();
   await expect(page.locator('.offline-body [role="status"]')).toHaveText('La Bible et le lecteur sont disponibles hors ligne sur cet appareil.', { timeout: 60000 });
 }
-async function github(context: BrowserContext, same = false) {
+async function github(context: BrowserContext, same = false, version = '2.1.1') {
   const calls = { metadata: 0, downloads: 0 };
   await context.route(LATEST, route => {
     calls.metadata++;
     return route.fulfill({
-      json: { version: '2.1.1', bytes: same ? original.length : updated.length, sha256: same ? originalHash : updatedHash, url: '/api/bible/verses?pwa=download&asset=421' },
+      json: { version, bytes: same ? original.length : updated.length, sha256: same ? originalHash : updatedHash, url: '/api/bible/verses?pwa=download&asset=421' },
     });
   });
   await context.route(ASSET, async route => {
@@ -133,7 +135,7 @@ test('la mise à jour GitHub conserve les choix de traduction malgré de nouveau
 });
 
 test('le hash fait foi : une autre étiquette de release ne force pas de téléchargement', async ({ page, context }) => {
-  const calls = await github(context, true);
+  const calls = await github(context, true, '99.0.0');
   await baseline(page);
   await installed(context);
   await page.reload();
@@ -143,6 +145,38 @@ test('le hash fait foi : une autre étiquette de release ne force pas de téléc
   await expect(page.getByRole('status',{name:'Mise à jour de la Bible'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mettre à jour la Bible',exact:true})).toHaveCount(0);
   expect(calls.downloads).toBe(0);
+  await expect(page.locator('.offline-body')).toContainText('Version locale : 99.0.0');
+});
+
+test('corrige une ancienne étiquette 1.1.0 et la conserve hors ligne sans retélécharger la Bible', async ({ page, context }) => {
+  const calls = await github(context, true);
+  await baseline(page);
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('literae-bible', 1);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('database', 'readwrite');
+        const store = tx.objectStore('database');
+        const get = store.get('current');
+        get.onsuccess = () => store.put({ ...get.result, version: '1.1.0' }, 'current');
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      };
+      request.onerror = () => reject(request.error);
+    });
+  });
+  await installed(context);
+  await page.reload();
+  await page.getByText('Emporter le comparateur', { exact: true }).click();
+  await expect(page.locator('.offline-body')).toContainText('Version locale : 2.1.1');
+  await expect(page.getByRole('button', {name:'Mettre à jour la Bible', exact:true})).toHaveCount(0);
+  expect(calls.downloads).toBe(0);
+  await context.setOffline(true);
+  await page.reload();
+  await page.getByText('Emporter le comparateur', { exact: true }).click();
+  await expect(page.locator('.offline-body')).toContainText('Version locale : 2.1.1');
+  await expect(page.locator('.verse p').first()).toContainText('Dieu');
 });
 
 test('le mode installé est compact et ses polices fonctionnent après réouverture hors ligne', async ({ page, context }) => {
