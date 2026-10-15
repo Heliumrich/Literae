@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { access, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { pipeline } from 'node:stream/promises';
 
@@ -15,13 +16,9 @@ async function hashBible(file) {
   return hash.digest('hex');
 }
 
-/** Separate Git cache: never pulls into or overwrites data/bible.db. */
+/** Fetch the single Bible source used by the website and the PWA export. */
 async function syncBible() {
-  const root = process.cwd();
-  if (process.env.BIBLE_DB) {
-    console.log('Bible : BIBLE_DB défini, copie personnalisée conservée (synchronisation automatique désactivée).');
-    return null;
-  }
+  const root = fileURLToPath(new URL('../', import.meta.url));
 
   const directory = path.join(root, 'data/french-bibles');
   const cache = path.join(directory, 'repository.git');
@@ -88,7 +85,6 @@ async function syncBible() {
   }
 }
 
-if (await access('.env').then(() => true, () => false)) process.loadEnvFile('.env');
 try { await syncBible(); }
 catch (error) {
   console.error(`Synchronisation Bible impossible : ${error.message}`);

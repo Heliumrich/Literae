@@ -162,8 +162,12 @@
       if (local) {
         data = await offlineQuery(params, requestedIds.map(id => translations.find(t => t.id === id)!.code));
       } else {
-        const res = await fetch(`/api/bible/verses?${params}`);
-        if (!res.ok) throw new Error('Passage indisponible');
+        const url = `/api/bible/verses?${params}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const detail = (await res.text()).slice(0, 1000);
+          throw new Error(`Passage indisponible (HTTP ${res.status}, ${url}) : ${detail}`);
+        }
         data = await res.json();
       }
       if (version !== loadVersion) return;

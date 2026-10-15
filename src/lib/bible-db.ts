@@ -1,5 +1,4 @@
 import Database from "better-sqlite3";
-import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { resolveBibleSource } from './bible-source.mjs';
 
@@ -11,10 +10,9 @@ declare const __LITERAE_BIBLE_SOURCE__: ReturnType<typeof resolveBibleSource>;
 
 // The compiled server uses the exact snapshot used to generate its comparator.
 // Native Node tests/development tooling can still resolve the source directly.
-// A stale BIBLE_DB in PM2/systemd must not override a compiled build's source.
 const source = typeof __LITERAE_BIBLE_SOURCE__ === 'undefined'
   ? resolveBibleSource()
-  : { ...__LITERAE_BIBLE_SOURCE__, path: path.resolve(__LITERAE_BIBLE_SOURCE__.path) };
+  : __LITERAE_BIBLE_SOURCE__;
 export const getBibleSource = () => source;
 export const resolveDbPath = () => source.path;
 let sourceLogged = false;

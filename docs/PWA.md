@@ -49,7 +49,7 @@ Le build ajoute à `dist/client` :
 
 - `/scriptorium/manifest.webmanifest`, les icônes et `/scriptorium/sw.js` ;
 - `/scriptorium/bible-worker-<hash>.js` et le moteur WASM dans `/_astro` ;
-- `/scriptorium/donnees/<sha256>.db`, copie statique du snapshot French-Bibles sélectionné au build (ou de la copie personnalisée `BIBLE_DB`). La version affichée vient du tag Git réel ; les URLs et caches utilisent le SHA-256 du fichier, sans version figée dans le code. Voir [synchronisation serveur](../data/README.md).
+- `/scriptorium/donnees/<sha256>.db`, copie statique de l’unique snapshot French-Bibles sélectionné au build. Le fichier historique `data/bible.db` et les replis sont supprimés. La version affichée vient du tag Git réel ; les URLs et caches utilisent le SHA-256 du fichier, sans version figée dans le code. Voir [synchronisation serveur](../data/README.md).
 
 La base source ne change pas. Son contenu devient téléchargeable publiquement pour permettre le mode hors ligne. La seule route serveur reste `/api/bible/verses` : les paramètres `pwa=latest` et `pwa=download&asset=<id>` sélectionnent le relais, isolé dans les modules PWA. Les requêtes de versets gardent leur comportement habituel. Aucun nouveau chemin n’est à ajouter au reverse proxy existant, et aucun service permanent ou appel Directus n’est ajouté.
 
