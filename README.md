@@ -161,6 +161,8 @@ Les anciennes URLs sous `/art/oeuvres`, `/art/personalites`, `/art/artworks` et 
 
 ## Déploiement
 
+Chaque build génère aussi `sitemap.xml` pour `literae.ch`, `sitemap-art.xml` pour `art.literae.ch` et `robots.txt` pour les annoncer aux moteurs de recherche. Les sitemaps suivent les URL canoniques des pages HTML effectivement générées, y compris les fiches Directus ; ils excluent les redirections, les catalogues JSON, l’API et la base biblique. Les domaines suivent `PUBLIC_MAIN_SITE_URL` et `PUBLIC_ART_SITE_URL`.
+
 Le build produit :
 
 - `dist/client`, qui contient toutes les pages et ressources statiques ;

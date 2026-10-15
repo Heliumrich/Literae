@@ -4,6 +4,7 @@ import svelte from "@astrojs/svelte";
 import node from "@astrojs/node";
 import tailwindcss from "@tailwindcss/vite";
 import comparatorPwa from "./scripts/comparator-pwa.mjs";
+import sitemaps from './scripts/sitemaps.mjs';
 import { existsSync } from 'node:fs';
 import { resolveBibleSource } from './src/lib/bible-source.mjs';
 
@@ -13,7 +14,10 @@ const bibleSource = resolveBibleSource();
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [svelte(), comparatorPwa()],
+  integrations: [svelte(), comparatorPwa(), sitemaps({
+    mainOrigin: process.env.PUBLIC_MAIN_SITE_URL || 'https://literae.ch',
+    artOrigin: process.env.PUBLIC_ART_SITE_URL || 'https://art.literae.ch',
+  })],
   // Toutes les routes sont prérendues, sauf l’unique endpoint SQLite du comparateur.
   output: "static",
   adapter: node({ mode: "standalone" }),

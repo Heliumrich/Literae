@@ -17,11 +17,12 @@ const {
 } = Astro.props;
 
 const fullTitle = title === "Literae" ? title : `${title} — Literae`;
+const pathname = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const isArtPath =
-  Astro.url.pathname === "/art" ||
-  Astro.url.pathname.startsWith("/oeuvres") ||
-  Astro.url.pathname.startsWith("/personalites");
-const canonicalPath = Astro.url.pathname === "/art" ? "/" : Astro.url.pathname;
+  pathname === "/art" ||
+  pathname.startsWith("/oeuvres") ||
+  pathname.startsWith("/personalites");
+const canonicalPath = pathname === "/art" ? "/" : Astro.url.pathname;
 const canonical = new URL(canonicalPath, `${isArtPath ? ART_ORIGIN : MAIN_ORIGIN}/`).href;
 ---
 
