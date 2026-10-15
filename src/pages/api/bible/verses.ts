@@ -1,10 +1,13 @@
+import { biblePwaResponse } from "../../../lib/offline/releases-route";
 import type { APIRoute } from "astro";
 import { getBibleDb } from "../../../lib/bible-db";
 import { readBiblePassage } from "../../../lib/bible-query";
 
 export const prerender = false;
 
-export const GET: APIRoute = ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
+  // PWA transfers share the existing VPS endpoint; verse requests stay unchanged.
+  if (url.searchParams.has("pwa")) return biblePwaResponse(url, request.signal);
   let db: ReturnType<typeof getBibleDb> | undefined;
   try {
     db = getBibleDb();

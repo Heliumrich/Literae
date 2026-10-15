@@ -18,6 +18,7 @@
   let supported = false;
   let ios = false;
   let standalone = false;
+  let installationHelp = false;
   let installEvent: InstallEvent | null = null;
   let registration: ServiceWorkerRegistration | undefined;
   let shell: Promise<ServiceWorkerRegistration> | undefined;
@@ -119,7 +120,7 @@
 
   async function install() {
     const event = installEvent;
-    if (!event) return;
+    if (!event) { installationHelp = true; return; }
     installEvent = null;
     await event.prompt();
     await event.userChoice;
@@ -169,19 +170,6 @@
 </script>
 
 <section class="offline-panel" aria-label="Installer et lire hors ligne">
-  {#if !standalone && (installEvent || ios)}
-    <div class="install-offer">
-      <span>Le comparateur sur votre écran d’accueil</span>
-      {#if installEvent}<button type="button" on:click={install}>Installer le comparateur</button>
-      {:else}<button type="button" on:click={() => expanded = !expanded}>Installer sur iPhone ou iPad</button>{/if}
-    </div>
-  {/if}
-  {#if updateAvailable}
-    <div class="install-offer">
-      <span>Une nouvelle version du comparateur est disponible.</span>
-      <button type="button" disabled={busy} on:click={updateApp}>Actualiser l’application</button>
-    </div>
-  {/if}
   {#if standalone && outdated && !dismissed && !busy && !expanded}
     <aside class="bible-update-notice" role="status" aria-label="Mise à jour de la Bible">
       <div><strong>Une nouvelle Bible est disponible</strong><p>Version {target.version} · {megabytes(target.bytes)} Mo à télécharger.</p></div>
@@ -192,34 +180,49 @@
     </aside>
   {/if}
   <details bind:open={expanded}>
-    <summary><span>{standalone ? 'Bible hors ligne' : 'Emporter le comparateur'}</span><span class="offline-state">{saved ? 'Bible téléchargée' : 'Installation & lecture hors ligne'}</span></summary>
+    <summary><span>Emporter le comparateur</span><span class="offline-state">{updateAvailable ? 'Actualiser' : saved ? 'Bible téléchargée' : `${megabytes(target.bytes)} Mo`}</span></summary>
     <div class="offline-body">
-      {#if !standalone}<p>Retrouvez ce même pupitre sur votre téléphone. Téléchargez toutes les traductions pour lire sans connexion, même un passage jamais ouvert.</p>{/if}
-      {#if !standalone}
-        {#if ios}
-          <p><strong>Sur iPhone ou iPad :</strong> ouvrez cette page dans Safari, touchez <strong>Partager</strong>, puis <strong>Sur l’écran d’accueil</strong> (ou « Ajouter à l’écran d’accueil »). Ouvrez ensuite Literae depuis son icône et téléchargez la Bible dans l’application.</p>
-        {:else}
-          <p>Pour l’ajouter à votre écran d’accueil, choisissez <strong>Installer l’application</strong> dans le menu de votre navigateur, si cette option est proposée.</p>
-        {/if}
-      {/if}
       {#if import.meta.env.DEV}
         <p>Le mode hors ligne s’active sur le build de production.</p>
       {:else if !supported}
         <p>Le mode hors ligne nécessite un navigateur récent, un stockage local autorisé et une connexion HTTPS.</p>
       {:else}
-        <p>Toutes les traductions · {megabytes(target.bytes)} Mo · téléchargement à lancer de préférence en Wi-Fi.</p>
-        {#if outdated}<p>Une nouvelle version de la Bible est disponible. Votre copie actuelle reste utilisable jusqu’à la fin de la mise à jour.</p>{/if}
-        <div class="offline-actions">
-          {#if !saved || outdated}<button type="button" disabled={busy} on:click={download}>{saved ? 'Mettre à jour la Bible' : 'Télécharger la Bible'}</button>{/if}
-          {#if busy}<button type="button" disabled={progress === 1} on:click={cancel}>Annuler</button>{/if}
-          {#if saved}<button type="button" disabled={busy} on:click={remove}>Supprimer la copie locale</button>{/if}
-        </div>
-        {#if busy}<progress max="1" value={progress} aria-label="Téléchargement de la Bible"></progress><p>{Math.round(progress * 100)} %</p>{/if}
-        {#if saved}<p>Version locale : {saved.version}. {persistent ? 'Stockage persistant accordé.' : 'Le système peut libérer ce stockage en cas de manque de place.'} Effacer les données du site supprime la copie locale.</p>{/if}
+        <ol class="setup-steps">
+          <li>
+            <h3>{standalone ? 'Votre Bible dans cette application' : '1. Télécharger la copie locale'}</h3>
+            <p>Toutes les traductions · {megabytes(target.bytes)} Mo · de préférence en Wi-Fi.</p>
+            {#if outdated}<p>Une nouvelle version est disponible. Votre copie actuelle reste utilisable pendant la mise à jour.</p>{/if}
+            <div class="offline-actions">
+              {#if !saved || outdated}<button type="button" disabled={busy} on:click={download}>{saved ? 'Mettre à jour la Bible' : 'Télécharger la Bible'}</button>{/if}
+              {#if busy}<button type="button" disabled={progress === 1} on:click={cancel}>Annuler</button>{/if}
+              {#if saved}<button type="button" disabled={busy} on:click={remove}>Supprimer la copie locale</button>{/if}
+            </div>
+            {#if busy}<progress max="1" value={progress} aria-label="Téléchargement de la Bible"></progress><p>{Math.round(progress * 100)} %</p>{/if}
+            {#if saved}<p>Version locale : {saved.version}. {persistent ? 'Stockage persistant accordé.' : 'Le système peut libérer ce stockage en cas de manque de place.'} Effacer les données du site supprime la copie locale.</p>{/if}
+          </li>
+          {#if !standalone}
+            <li>
+              <h3>2. Installer le comparateur</h3>
+              <button type="button" disabled={busy} on:click={install}>Installer le comparateur</button>
+              {#if installationHelp}
+                {#if ios}
+                  <p><strong>Sur iPhone ou iPad :</strong> dans Safari, touchez <strong>Partager</strong>, puis <strong>Sur l’écran d’accueil</strong> (ou « Ajouter à l’écran d’accueil »). Ouvrez ensuite Literae depuis son icône.</p>
+                {:else}
+                  <p>Dans le menu de votre navigateur, choisissez <strong>Installer l’application</strong> ou <strong>Ajouter à l’écran d’accueil</strong>, si cette option est proposée.</p>
+                {/if}
+              {/if}
+              {#if ios}<p>Sur iPhone/iPad, le stockage de Safari peut être séparé de celui de l’application. Si la copie n’est pas reprise, téléchargez la Bible depuis l’application installée.</p>{/if}
+            </li>
+          {/if}
+        </ol>
       {/if}
       {#if standalone}
         <p>{checking ? 'Recherche d’une nouvelle version…' : checkMessage || (checkedAt ? `Dernière vérification : ${new Date(checkedAt).toLocaleString('fr-FR')}.` : '')}</p>
         <button type="button" disabled={checking || busy} on:click={checkForUpdate}>Vérifier les mises à jour de la Bible</button>
+      {/if}
+      {#if updateAvailable}
+        <p>Une nouvelle version du comparateur est disponible.</p>
+        <button type="button" disabled={busy} on:click={updateApp}>Actualiser l’application</button>
       {/if}
       <p role="status">{message}</p>
       {#if problem}<p role="alert">{problem}</p>{/if}
@@ -232,12 +235,14 @@
   .bible-update-notice p { margin: .25rem 0 0; }
   .bible-update-notice .offline-actions { margin-top: 0; }
   :global(html[data-comparator-mode="standalone"]) .offline-panel { margin-bottom: .5rem; }
-  .install-offer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; border-bottom: 1px solid var(--border); font-family: var(--type-ui); font-size: .8rem; }
   .offline-panel { max-width: 120rem; margin: 0 auto 1.25rem; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); }
-  summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: .9rem 1rem; cursor: pointer; font-family: var(--type-ui); font-size: .85rem; }
+  summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2.75rem; padding: .5rem .75rem; cursor: pointer; font-family: var(--type-ui); font-size: .85rem; }
   summary::after { content: '+'; color: var(--accent); }
   details[open] summary::after { content: '−'; }
   .offline-state { margin-left: auto; color: var(--accent); font-size: .75rem; }
+  .setup-steps { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+  .setup-steps h3 { margin-bottom: .4rem; color: var(--text); font-size: 1rem; line-height: 1.3; }
+  .setup-steps h3 + button { margin-top: .35rem; }
   .offline-body { padding: 0 1rem 1rem; font-size: .95rem; line-height: 1.55; }
   p + p, button + p, .offline-actions { margin-top: .75rem; }
   p:empty { display: none; }

@@ -2,6 +2,7 @@
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { readBiblePassage, type BibleReader } from '../bible-query';
+import { releaseDownloadUrl } from './releases';
 import { storedBible } from './storage';
 import type { WorkerRequest, StoredBible } from './types';
 
@@ -61,12 +62,10 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
       download = new AbortController();
       let candidate: Database | undefined;
       try {
-        const external = new URL(meta.url, self.location.origin).origin !== self.location.origin;
-        const res = await fetch(meta.url, {
-          signal: download.signal, cache: 'no-store',
-          ...(external ? { credentials: 'omit' as const, headers: { Accept: 'application/octet-stream' } } : {}),
-        });
-        if (!res.ok || !res.body) throw new Error('La Bible ne peut pas être téléchargée.');
+        const url = new URL(releaseDownloadUrl(meta.url) || meta.url, self.location.origin);
+        if (url.origin !== self.location.origin) throw new Error('Le téléchargement doit passer par Literae. Actualisez l’application.');
+        const res = await fetch(url.href, { signal: download.signal, cache: 'no-store' });
+        if (!res.ok || !res.body) throw new Error('La Bible ne peut pas être téléchargée. Vérifiez votre connexion et réessayez.');
         const bytes = new Uint8Array(meta.bytes);
         const stream = res.body.getReader();
         let loaded = 0;
@@ -115,6 +114,6 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
     }
     self.postMessage({ id, result });
   } catch (error) {
-    self.postMessage({ id, error: error instanceof Error && error.name === 'AbortError' ? 'Téléchargement annulé.' : error instanceof Error ? error.message : String(error) });
+    self.postMessage({ id, error: error instanceof Error && error.name === 'AbortError' ? 'Téléchargement annulé.' : error instanceof TypeError ? 'Téléchargement impossible. Vérifiez votre connexion puis réessayez.' : error instanceof Error ? error.message : String(error) });
   }
 };

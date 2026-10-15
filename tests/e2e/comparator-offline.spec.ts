@@ -88,10 +88,11 @@ test('iPhone affiche les étapes d’installation Safari', async ({ browser }) =
   });
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4322' + route);
-  await page.getByRole('button', {name:'Installer sur iPhone ou iPad',exact:true}).click();
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  await page.getByRole('button', {name:'Installer le comparateur',exact:true}).click();
   await expect(page.getByText('Sur iPhone ou iPad :',{exact:true})).toBeVisible();
   await expect(page.getByText('Partager',{exact:true})).toBeVisible();
-  await expect(page.locator('.offline-body')).toContainText('téléchargez la Bible dans l’application');
+  await expect(page.locator('.offline-body')).toContainText('téléchargez la Bible depuis l’application installée');
   await context.close();
 });
 
@@ -116,14 +117,14 @@ test('une mise à jour échouée conserve la copie précédente et ses passages 
   });
   await context.addInitScript(() => Object.defineProperty(navigator, 'standalone', {get: () => true}));
   const bytes = readFileSync('data/bible.db');
-  await context.route('https://api.github.com/repos/Heliumrich/French-Bibles/releases/latest', route => route.fulfill({
+  await context.route('**/api/bible/verses?pwa=latest', route => route.fulfill({
     headers: {'Access-Control-Allow-Origin':'*'},
-    json: {tag_name:'1.1.0',draft:false,prerelease:false,assets:[{id:999,name:'bible.db',size:bytes.length,digest:'sha256:' + createHash('sha256').update(bytes).digest('hex')}]},
+    json: {version:'1.1.0',bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),url:'/api/bible/verses?pwa=download&asset=999'},
   }));
   await page.reload();
-  await page.getByText('Bible hors ligne',{exact:true}).click();
-  await expect(page.getByText('Une nouvelle version de la Bible est disponible.',{exact:false})).toBeVisible();
-  await context.route('https://api.github.com/repos/Heliumrich/French-Bibles/releases/assets/999', route => route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*'},body:'interrupted'}));
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  await expect(page.locator('.offline-body').getByRole('button',{name:'Mettre à jour la Bible',exact:true})).toBeVisible();
+  await context.route('**/api/bible/verses?pwa=download&asset=999', route => route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*'},body:'interrupted'}));
   await page.locator('.offline-body').getByRole('button',{name:'Mettre à jour la Bible',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('Téléchargement incomplet');
   await context.setOffline(true);
@@ -131,7 +132,7 @@ test('une mise à jour échouée conserve la copie précédente et ses passages 
   await page.locator('#cmp-ref').fill('Psaume 22');
   await page.getByRole('button',{name:'Charger ce passage',exact:true}).click();
   await expect(page.locator('.translation-page').first().locator('.verse p').first()).toContainText('C’est le Seigneur qui me conduit');
-  await page.getByText('Bible hors ligne',{exact:true}).click();
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
   await expect(page.locator('.offline-body')).toContainText('Version locale : previous');
 });
 

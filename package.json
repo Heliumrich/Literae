@@ -16,7 +16,8 @@
     "preview": "astro preview",
     "start": "node dist/server/entry.mjs",
     "astro": "astro",
-    "test:pwa": "playwright test"
+    "test:pwa": "playwright test",
+    "test:server": "node --experimental-strip-types --test tests/unit/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/node": "11.1.4",

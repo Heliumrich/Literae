@@ -104,7 +104,9 @@ La visionneuse navigable du catalogue et des collections d’une personnalité p
 
 Le comparateur est une PWA installable : invitation native sur Android lorsque le navigateur le permet, instructions Safari sur iPhone/iPad. Le panneau **Emporter le comparateur** permet de télécharger toutes les traductions (52,5 Mo actuellement), suivre le transfert et supprimer la copie locale. Après téléchargement, le lecteur fonctionne sans connexion, y compris pour des passages jamais consultés.
 
-La PWA vérifie les releases de [French-Bibles](https://github.com/Heliumrich/French-Bibles) à l’ouverture et propose les mises à jour avec leur taille, sans téléchargement automatique. L’interface et ses polices se mettent à jour séparément de la Bible. Le site classique conserve sa navigation et sa base serveur.
+Le seul panneau **Emporter le comparateur** regroupe le téléchargement puis l’installation. Le téléchargement fonctionne aussi directement dans l’application installée ; aucune étape préalable dans le navigateur n’est obligatoire.
+
+La PWA vérifie les releases de [French-Bibles](https://github.com/Heliumrich/French-Bibles) à l’ouverture et propose les mises à jour avec leur taille, sans téléchargement automatique. Les transferts GitHub passent par le VPS via l’API existante, pour éviter les erreurs de téléchargement inter-domaines. L’interface et ses polices se mettent à jour séparément de la Bible. Le site classique conserve sa navigation et sa base serveur.
 
 La version installée réutilise le même comparateur Svelte. Le stockage dépend des quotas et de l’espace de l’appareil ; il peut être libéré par le système. L’installation sur iOS doit être suivie du téléchargement depuis l’application ouverte sur l’écran d’accueil.
 

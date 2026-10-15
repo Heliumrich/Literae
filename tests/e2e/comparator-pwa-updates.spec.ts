@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import Database from 'better-sqlite3';
 
 const PAGE = '/scriptorium/comparateur';
-const LATEST = 'https://api.github.com/repos/Heliumrich/French-Bibles/releases/latest';
-const ASSET = 'https://api.github.com/repos/Heliumrich/French-Bibles/releases/assets/421';
+const LATEST = '**/api/bible/verses?pwa=latest';
+const ASSET = '**/api/bible/verses?pwa=download&asset=421';
 const original = readFileSync('data/bible.db');
 const originalHash = createHash('sha256').update(original).digest('hex');
 let directory: string;
@@ -45,16 +45,12 @@ async function github(context: BrowserContext, same = false) {
   await context.route(LATEST, route => {
     calls.metadata++;
     return route.fulfill({
-      contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' },
-      json: { tag_name: '2.1.1', draft: false, prerelease: false, body: 'Changelog volontairement ignoré', assets: [{
-        id: 421, name: 'bible.db', size: same ? original.length : updated.length,
-        digest: `sha256:${same ? originalHash : updatedHash}`,
-      }] },
+      json: { version: '2.1.1', bytes: same ? original.length : updated.length, sha256: same ? originalHash : updatedHash, url: '/api/bible/verses?pwa=download&asset=421' },
     });
   });
   await context.route(ASSET, async route => {
     calls.downloads++;
-    expect(route.request().headers().accept).toBe('application/octet-stream');
+    expect(new URL(route.request().url()).origin).toBe('http://127.0.0.1:4322');
     await route.fulfill({ contentType: 'application/octet-stream', headers: { 'Access-Control-Allow-Origin': '*' }, body: same ? original : updated });
   });
   return calls;
@@ -92,9 +88,9 @@ test('la release est vérifiée à l’ouverture et au retour au premier plan, a
   }
   await notice.getByRole('button', {name:'Plus tard',exact:true}).click();
   await expect(notice).toHaveCount(0);
-  await page.getByText('Bible hors ligne',{exact:true}).click();
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
   await expect(page.getByRole('button',{name:'Mettre à jour la Bible',exact:true})).toBeVisible();
-  await page.getByText('Bible hors ligne',{exact:true}).click();
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
   await resume(page);
   await expect.poll(() => calls.metadata).toBe(2);
   await expect(notice).toBeVisible();
@@ -119,7 +115,7 @@ test('la mise à jour GitHub conserve les choix de traduction malgré de nouveau
   await expect(page.locator('.offline-body')).toContainText('Version locale : 2.1.1');
   expect(calls.downloads).toBe(1);
   let serverReads = 0;
-  await context.route('**/api/bible/verses?**', route => { serverReads++; return route.continue(); });
+  await context.route('**/api/bible/verses?**', route => { if (new URL(route.request().url()).searchParams.has('pwa')) return route.fallback(); serverReads++; return route.continue(); });
   const website = await context.newPage();
   await website.goto(PAGE + '?test-browser');
   await expect(website.locator('.verse p').first()).toContainText('Dieu');
@@ -142,7 +138,7 @@ test('le hash fait foi : une autre étiquette de release ne force pas de téléc
   await installed(context);
   await page.reload();
   await expect.poll(() => calls.metadata).toBe(1);
-  await page.getByText('Bible hors ligne',{exact:true}).click();
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
   await expect(page.getByRole('button',{name:'Vérifier les mises à jour de la Bible',exact:true})).toBeEnabled();
   await expect(page.getByRole('status',{name:'Mise à jour de la Bible'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mettre à jour la Bible',exact:true})).toHaveCount(0);
@@ -216,6 +212,8 @@ test('actualiser l’interface recharge les onglets et conserve la Bible sans tr
   try {
     writeFileSync(workerPath, originalWorker.replace(/literae-comparator-[a-f0-9]+/,`literae-comparator-test-${Date.now()}`));
     await page.evaluate(async()=>{const registration=await navigator.serviceWorker.getRegistration();await registration!.update();});
+    await expect(page.locator('.offline-state')).toHaveText('Actualiser',{timeout:30000});
+    await page.getByText('Emporter le comparateur',{exact:true}).click();
     const button=page.getByRole('button',{name:'Actualiser l’application',exact:true});
     await expect(button).toBeVisible({timeout:30000});
     await Promise.all([page.waitForEvent('load'),other.waitForEvent('load'),button.click()]);
@@ -226,4 +224,82 @@ test('actualiser l’interface recharge les onglets et conserve la Bible sans tr
     await other.getByRole('button',{name:'Charger ce passage',exact:true}).click();
     await expect(other.locator('.translation-page').first().locator('.verse')).toHaveCount(25);
   } finally {writeFileSync(workerPath,originalWorker);}
+});
+
+test('premier téléchargement directement dans une PWA sans copie du navigateur', async ({ page, context }) => {
+  const calls = await github(context);
+  const external: string[] = [];
+  context.on('request', request => {
+    if (new URL(request.url()).hostname.endsWith('github.com')) external.push(request.url());
+  });
+  await installed(context);
+  await page.goto(PAGE);
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  await expect(page.getByRole('button',{name:'Télécharger la Bible',exact:true})).toBeEnabled();
+  await page.getByRole('button',{name:'Télécharger la Bible',exact:true}).click();
+  await expect(page.locator('.offline-body [role="status"]')).toHaveText('La Bible et le lecteur sont disponibles hors ligne sur cet appareil.',{timeout:60000});
+  expect(calls.downloads).toBe(1);
+  expect(external).toEqual([]);
+  await context.setOffline(true);
+  await page.close();
+  const reopened = await context.newPage();
+  await reopened.goto(PAGE + '?ref=Gen%C3%A8se%201');
+  await expect(reopened.locator('.translation-page').first().locator('.verse')).toHaveCount(31);
+});
+
+test('annuler dans le navigateur ne bloque pas le téléchargement depuis la PWA', async ({ page, context }) => {
+  const calls = await github(context);
+  let requested!: () => void;
+  let release!: () => void;
+  const started = new Promise<void>(resolve => requested = resolve);
+  const held = new Promise<void>(resolve => release = resolve);
+  await context.route('**/scriptorium/donnees/*.db', async route => {
+    requested(); await held; await route.abort().catch(() => {});
+  });
+  await page.goto(PAGE);
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  await page.getByRole('button',{name:'Télécharger la Bible',exact:true}).click();
+  await started;
+  await page.getByRole('button',{name:'Annuler',exact:true}).click();
+  await expect(page.locator('.offline-body [role="status"]')).toHaveText('Téléchargement annulé.');
+  release();
+  await context.unroute('**/scriptorium/donnees/*.db');
+  await installed(context);
+  await page.reload();
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  await page.getByRole('button',{name:'Télécharger la Bible',exact:true}).click();
+  await expect(page.locator('.offline-body [role="status"]')).toHaveText('La Bible et le lecteur sont disponibles hors ligne sur cet appareil.',{timeout:60000});
+  expect(calls.downloads).toBe(1);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.locator('.verse p').first()).toContainText('Dieu');
+});
+
+test('un seul panneau compact regroupe téléchargement puis installation', async ({ page }) => {
+  await page.goto(PAGE);
+  await expect(page.getByText('Le comparateur sur votre écran d’accueil',{exact:true})).toHaveCount(0);
+  expect(await page.locator('.offline-panel').evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(50);
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  const steps = page.locator('.setup-steps > li');
+  await expect(steps).toHaveCount(2);
+  await expect(steps.nth(0).getByRole('button',{name:'Télécharger la Bible',exact:true})).toBeVisible();
+  await expect(steps.nth(1).getByRole('button',{name:'Installer le comparateur',exact:true})).toBeVisible();
+});
+
+test('les anciennes métadonnées GitHub enregistrées utilisent désormais le relais local', async ({ page, context }) => {
+  const calls = await github(context);
+  await context.route(LATEST, route => route.fulfill({ status: 503, body: 'unavailable' }));
+  await context.route('https://api.github.com/**', route => route.abort());
+  await installed(context);
+  await context.addInitScript(({sha256,bytes}) => {
+    localStorage.setItem('literae-bible-release', JSON.stringify({
+      checkedAt: Date.now(), bible: {version:'2.1.1',sha256,bytes,url:'https://api.github.com/repos/Heliumrich/French-Bibles/releases/assets/421'},
+    }));
+  }, {sha256:updatedHash,bytes:updated.length});
+  await page.goto(PAGE);
+  await page.getByText('Emporter le comparateur',{exact:true}).click();
+  await page.getByRole('button',{name:'Télécharger la Bible',exact:true}).click();
+  await expect(page.locator('.offline-body [role="status"]')).toHaveText('La Bible et le lecteur sont disponibles hors ligne sur cet appareil.',{timeout:60000});
+  expect(calls.downloads).toBe(1);
+  await expect(page.locator('.offline-body')).toContainText('Version locale : 2.1.1');
 });

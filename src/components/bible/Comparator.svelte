@@ -182,7 +182,7 @@
       nav = data.navigation ?? getBibleNavigation(initialNavigationBooks, current);
     } catch (e) {
       if (version !== loadVersion) return;
-      error = navigator.onLine ? 'Le passage n’a pas pu être chargé.' : `Téléchargez d’abord la Bible depuis « ${isInstalledComparator() ? 'Bible hors ligne' : 'Emporter le comparateur'} » pour lire hors ligne.`;
+      error = navigator.onLine ? 'Le passage n’a pas pu être chargé.' : `Téléchargez d’abord la Bible depuis « Emporter le comparateur » pour lire hors ligne.`;
       columns = [];
       console.error(e);
     } finally {
