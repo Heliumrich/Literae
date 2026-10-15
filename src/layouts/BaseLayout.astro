@@ -22,7 +22,7 @@ const isArtPath =
   pathname === "/art" ||
   pathname.startsWith("/oeuvres") ||
   pathname.startsWith("/personalites");
-const canonicalPath = pathname === "/art" ? "/" : Astro.url.pathname;
+const canonicalPath = pathname === "/art" ? "/" : pathname;
 const canonical = new URL(canonicalPath, `${isArtPath ? ART_ORIGIN : MAIN_ORIGIN}/`).href;
 ---
 

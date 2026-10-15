@@ -20,6 +20,7 @@ export default defineConfig({
   })],
   // Toutes les routes sont prérendues, sauf l’unique endpoint SQLite du comparateur.
   output: "static",
+  trailingSlash: 'never',
   adapter: node({ mode: "standalone" }),
   redirects: {
     "/comparateur": "/scriptorium/comparateur",

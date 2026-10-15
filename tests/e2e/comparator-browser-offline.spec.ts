@@ -52,5 +52,15 @@ for (const device of ['Desktop Chrome', 'Pixel 7']) {
       expect(await page.evaluate(() => navigator.onLine)).toBe(true);
       await readUnvisitedPassage(page);
     });
+
+    test('retire le slash final hors ligne en conservant la référence demandée', async ({ page, context }) => {
+      await download(page);
+      await context.setOffline(true);
+      await page.goto(PAGE + '/?ref=' + encodeURIComponent('Genèse 1'));
+      expect(new URL(page.url()).pathname).toBe(PAGE);
+      expect(new URL(page.url()).searchParams.get('ref')).toBe('Genèse 1');
+      await expect(page.locator('.translation-page').first().locator('.verse')).toHaveCount(31);
+      await expect(page.getByRole('alert')).toHaveCount(0);
+    });
   });
 }

@@ -18,7 +18,7 @@ export const GET: APIRoute = async () => {
     const tags = parseTags(work.tags);
     return {
       slug: work.slug,
-      href: `/art/oeuvres/${work.slug}`,
+      href: `/oeuvres/${work.slug}`,
       title: getArtworkTitle(work),
       year: work.year ?? null,
       artist:

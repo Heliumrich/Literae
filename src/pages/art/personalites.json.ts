@@ -9,7 +9,7 @@ export const GET: APIRoute = async () => {
 
   const items = artists.map((artist) => ({
     slug: artist.slug,
-    href: `/art/personalites/${artist.slug}`,
+    href: `/personalites/${artist.slug}`,
     title: artist.name,
     subtitle: artist.short_description || null,
     thumb: getAssetURL(fileIdOf(artist.photo), "thumbnail"),

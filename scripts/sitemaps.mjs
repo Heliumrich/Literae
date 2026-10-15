@@ -17,10 +17,14 @@ export default function sitemaps({ mainOrigin, artOrigin }) {
   const main = new URL(mainOrigin).origin;
   const art = new URL(artOrigin).origin;
   let client;
+  let trailingSlash;
   return {
     name: 'literae-sitemaps',
     hooks: {
-      'astro:config:done': ({ config }) => { client = fileURLToPath(config.build.client); },
+      'astro:config:done': ({ config }) => {
+        client = fileURLToPath(config.build.client);
+        trailingSlash = config.trailingSlash;
+      },
       'astro:build:done': async ({ logger }) => {
         const sites = new Map([[main, { filename: 'sitemap.xml', urls: new Set() }]]);
         if (art !== main) sites.set(art, { filename: 'sitemap-art.xml', urls: new Set() });
@@ -35,7 +39,14 @@ export default function sitemaps({ mainOrigin, artOrigin }) {
           const canonical = link?.match(/\bhref=["']([^"']+)["']/i)?.[1];
           // Only absolute canonicals; JSON, API and Bible files are not HTML.
           if (!canonical || !URL.canParse(canonical)) continue;
-          sites.get(new URL(canonical).origin)?.urls.add(canonical);
+          const url = new URL(canonical);
+          const site = sites.get(url.origin);
+          if (!site) continue;
+          if (url.pathname !== '/' && ((trailingSlash === 'never' && url.pathname.endsWith('/'))
+            || (trailingSlash === 'always' && !url.pathname.endsWith('/')))) {
+            throw new Error(`URL canonique incompatible avec trailingSlash=${trailingSlash} : ${canonical} (${file})`);
+          }
+          site.urls.add(canonical);
         }
 
         const declarations = [];

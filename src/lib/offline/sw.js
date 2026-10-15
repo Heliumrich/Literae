@@ -24,6 +24,11 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   const isPage = event.request.mode === 'navigate' && (url.pathname === PAGE || url.pathname === PAGE + '/');
   if (!isPage && !ASSETS.includes(url.pathname)) return;
+  // Apply the same canonical path as Astro, including during offline navigation.
+  if (isPage && url.pathname !== PAGE) {
+    event.respondWith(Response.redirect(new URL(PAGE + url.search, url.origin).href, 301));
+    return;
+  }
   event.respondWith((async () => {
     const cached = await (await caches.open(CACHE)).match(isPage ? PAGE : url.pathname);
     return cached || fetch(event.request);

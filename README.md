@@ -163,6 +163,9 @@ Les anciennes URLs sous `/art/oeuvres`, `/art/personalites`, `/art/artworks` et 
 
 Chaque build génère aussi `sitemap.xml` pour `literae.ch`, `sitemap-art.xml` pour `art.literae.ch` et `robots.txt` pour les annoncer aux moteurs de recherche. Les sitemaps suivent les URL canoniques des pages HTML effectivement générées, y compris les fiches Directus ; ils excluent les redirections, les catalogues JSON, l’API et la base biblique. Les domaines suivent `PUBLIC_MAIN_SITE_URL` et `PUBLIC_ART_SITE_URL`.
 
+Les pages utilisent des URL sans slash final, sauf les racines des domaines (`/`). `trailingSlash: 'never'` dans Astro aligne le serveur sur les liens internes, les URL canoniques et les sitemaps. Le serveur Node redirige les pages terminées par `/` vers la version sans slash avec un statut 301, en conservant les paramètres. Le service worker applique la même règle au comparateur hors ligne.
+La génération des sitemaps arrête le build si une URL canonique ne respecte pas la politique `trailingSlash` configurée.
+
 Le build produit :
 
 - `dist/client`, qui contient toutes les pages et ressources statiques ;
