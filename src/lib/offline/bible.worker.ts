@@ -13,6 +13,12 @@ let saved: StoredBible | undefined;
 let initialized: Promise<void> | undefined;
 let download: AbortController | undefined;
 const engine = () => sql ??= initSqlJs({ locateFile: () => wasmUrl });
+// sql.js loads bytes into memory; all SQL against that copy is read-only too.
+async function openReadOnlyBible(bytes: Uint8Array): Promise<Database> {
+  const database = new (await engine()).Database(bytes);
+  database.run('PRAGMA query_only = ON');
+  return database;
+}
 const metadata = () => saved ? { ...saved, blob: undefined } : null;
 async function initialize() {
   saved = await storedBible();
@@ -23,8 +29,7 @@ async function openBible() {
   if (db) return db;
   const copy = saved;
   return opening ??= (async () => {
-    const SQL = await engine();
-    db = new SQL.Database(new Uint8Array(await copy.blob.arrayBuffer()));
+    db = await openReadOnlyBible(new Uint8Array(await copy.blob.arrayBuffer()));
     return db;
   })().finally(() => { opening = undefined; });
 }
@@ -88,15 +93,7 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
         const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
         const hash = Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('');
         if (hash !== meta.sha256) throw new Error('La vérification du téléchargement a échoué.');
-        candidate = new (await engine()).Database(bytes);
-        const check = candidate.exec('PRAGMA quick_check');
-        if (check[0]?.values[0]?.[0] !== 'ok') throw new Error('Base biblique invalide.');
-        // Reject future releases whose schema this reader cannot understand.
-        try {
-          candidate.exec('SELECT id, code, name_short FROM translations LIMIT 1');
-          candidate.exec('SELECT code, order_num FROM books LIMIT 1');
-          candidate.exec('SELECT translation_id, book, chapter, verse, text FROM verses LIMIT 1');
-        } catch { throw new Error('Cette Bible nécessite une version plus récente du comparateur. Votre copie actuelle est conservée.'); }
+        candidate = await openReadOnlyBible(bytes);
         download.signal.throwIfAborted();
         const next = { ...meta, blob: new Blob([bytes]) };
         // A failed or cancelled update preserves the previous, complete database.

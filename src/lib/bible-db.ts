@@ -14,6 +14,7 @@ export const resolveDbPath = () => source.path;
 
 export function getBibleDb() {
   const dbPath = resolveDbPath();
+  // SQLITE_OPEN_READONLY: this connection cannot write to bible.db.
   const db = new Database(dbPath, { readonly: true, fileMustExist: true });
   db.pragma("query_only = ON");
   return db;

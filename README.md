@@ -116,7 +116,7 @@ Voir [PWA : utilisation, déploiement et tests](docs/PWA.md).
 
 ## Base biblique
 
-`npm run build` récupère automatiquement `bible.db` depuis la branche `main` de [French-Bibles](https://github.com/Heliumrich/French-Bibles), vérifie son intégrité et prépare un snapshot versionné dans `data/french-bibles/`. Le tag réel fournit la version affichée ; le SHA-256 du fichier identifie son contenu et renouvelle les caches, sans constante à modifier à la main.
+`npm run build` récupère automatiquement `bible.db` depuis la branche `main` de [French-Bibles](https://github.com/Heliumrich/French-Bibles) et prépare un snapshot versionné dans `data/french-bibles/`. Le tag réel fournit la version affichée ; le SHA-256 du fichier identifie son contenu et renouvelle les caches, sans constante à modifier à la main.
 
 Les anciennes copies restent disponibles pour les serveurs en cours et les retours arrière. Le fichier historique `data/bible.db` et ses fichiers SQLite annexes restent intacts. `BIBLE_DB` permet de conserver une copie personnalisée et désactive cette synchronisation. Voir [gestion de la base et déploiement VPS](data/README.md).
 
