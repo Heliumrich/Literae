@@ -3,6 +3,10 @@
   import { formatRefLabel, parseReference } from '../../lib/bible-ref';
   import { BIBLE_DATA_VERSION, restoreTranslationIds, type BibleTranslation } from '../../lib/bible-translations';
   import { getBibleNavigation, type BibleCatalogBook } from '../../lib/bible-navigation';
+  import OfflinePanel from './OfflinePanel.svelte';
+  import { isInstalledComparator } from '../../lib/offline/display-mode';
+  import { offlineStatus, offlineQuery } from '../../lib/offline/client';
+  import type { OfflineBible } from '../../lib/offline/types';
   import PassagePicker from './PassagePicker.svelte';
 
   type Translation = BibleTranslation;
@@ -11,6 +15,7 @@
   type NavTarget = { book: string; chapter: number; verse?: number | null };
   type Navigation = { prev: NavTarget | null; next: NavTarget | null };
 
+  export let offlineBible: OfflineBible;
   export let initialTranslations: Translation[] = [];
   export let initialNavigationBooks: BibleCatalogBook[] = [];
 
@@ -52,7 +57,8 @@
   });
 
   onMount(async () => {
-    const saved = localStorage.getItem('bible-comparator');
+    let saved: string | null = null;
+    try { saved = localStorage.getItem('bible-comparator'); } catch {}
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -95,11 +101,11 @@
 
   function savePrefs() {
     if (!ready) return;
-    localStorage.setItem('bible-comparator', JSON.stringify({
+    try { localStorage.setItem('bible-comparator', JSON.stringify({
       ref, numCols, selectedIds,
       selectedCodes: selectedIds.map(id => translations.find(translation => translation.id === id)?.code),
       align, textScale
-    }));
+    })); } catch {}
   }
 
   function adjustTextSize(direction: -1 | 1) {
@@ -148,9 +154,18 @@
       if (parsed.verseEnd) params.set('verseEnd', String(parsed.verseEnd));
       requestedIds.forEach(id => params.append('t', String(id)));
 
-      const res = await fetch(`/api/bible/verses?${params}`);
-      if (!res.ok) throw new Error('Passage indisponible');
-      const data = await res.json();
+      let data;
+      let local = null;
+      if (isInstalledComparator()) {
+        try { local = await offlineStatus(); } catch {}
+      }
+      if (local) {
+        data = await offlineQuery(params, requestedIds.map(id => translations.find(t => t.id === id)!.code));
+      } else {
+        const res = await fetch(`/api/bible/verses?${params}`);
+        if (!res.ok) throw new Error('Passage indisponible');
+        data = await res.json();
+      }
       if (version !== loadVersion) return;
 
       columns = (data.results ?? []).map((column: Column, index: number) => ({
@@ -167,7 +182,7 @@
       nav = data.navigation ?? getBibleNavigation(initialNavigationBooks, current);
     } catch (e) {
       if (version !== loadVersion) return;
-      error = 'Le passage n’a pas pu être chargé.';
+      error = navigator.onLine ? 'Le passage n’a pas pu être chargé.' : `Téléchargez d’abord la Bible depuis « ${isInstalledComparator() ? 'Bible hors ligne' : 'Emporter le comparateur'} » pour lire hors ligne.`;
       columns = [];
       console.error(e);
     } finally {
@@ -186,6 +201,8 @@
     highlightedVerse = enter ? verse : null;
   }
 </script>
+
+<OfflinePanel metadata={offlineBible} onready={() => load()} />
 
 <div class="comparator" aria-busy={loading} style={`--text-scale: ${textScale}`}>
   <section class="comparator-controls" style={`--column-count: ${columns.length || numCols}`} aria-label="Choisir un passage et des traductions">

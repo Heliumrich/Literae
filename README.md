@@ -100,9 +100,19 @@ Le catalogue des œuvres alterne les artistes dans l’ordre alphabétique de le
 
 La visionneuse navigable du catalogue et des collections d’une personnalité précharge uniquement l’image suivante dans la qualité sélectionnée. Depuis une fiche d’œuvre, elle utilise une vue épurée, sans légende ni navigation. Le bouton **Épique**, réservé aux œuvres attribuées à Gustave Doré, applique une courbe en S avec un filtre SVG côté navigateur ; les fichiers Directus et les téléchargements restent inchangés.
 
+## Comparateur sur smartphone et hors ligne
+
+Le comparateur est une PWA installable : invitation native sur Android lorsque le navigateur le permet, instructions Safari sur iPhone/iPad. Le panneau **Emporter le comparateur** permet de télécharger toutes les traductions (52,5 Mo actuellement), suivre le transfert et supprimer la copie locale. Après téléchargement, le lecteur fonctionne sans connexion, y compris pour des passages jamais consultés.
+
+La PWA vérifie les releases de [French-Bibles](https://github.com/Heliumrich/French-Bibles) à l’ouverture et propose les mises à jour avec leur taille, sans téléchargement automatique. L’interface et ses polices se mettent à jour séparément de la Bible. Le site classique conserve sa navigation et sa base serveur.
+
+La version installée réutilise le même comparateur Svelte. Le stockage dépend des quotas et de l’espace de l’appareil ; il peut être libéré par le système. L’installation sur iOS doit être suivie du téléchargement depuis l’application ouverte sur l’écran d’accueil.
+
+Voir [PWA : utilisation, déploiement et tests](docs/PWA.md).
+
 ## Base biblique
 
-`data/bible.db` est toujours ouverte en lecture seule et n’est jamais envoyée au navigateur. Les métadonnées éditoriales encore absentes de la base sont temporairement complétées dans `src/lib/bible-translations.ts`.
+`data/bible.db` est ouverte en lecture seule sur le serveur. Le comparateur peut aussi télécharger une copie complète sur l’appareil pour fonctionner hors ligne. Les métadonnées éditoriales encore absentes de la base sont temporairement complétées dans `src/lib/bible-translations.ts`.
 
 Pour remplacer la base :
 

@@ -15,7 +15,8 @@
     "check:static": "node scripts/check-static-boundary.mjs",
     "preview": "astro preview",
     "start": "node dist/server/entry.mjs",
-    "astro": "astro"
+    "astro": "astro",
+    "test:pwa": "playwright test"
   },
   "dependencies": {
     "@astrojs/node": "11.1.4",
@@ -24,12 +25,15 @@
     "astro": "7.2.9",
     "better-sqlite3": "13.0.3",
     "micromark": "4.0.2",
+    "sql.js": "1.15.0",
     "svelte": "5.57.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "9.6.0"
+    "@playwright/test": "1.64.1",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/sql.js": "1.4.11"
   },
   "allowScripts": {
     "better-sqlite3@13.0.3": true

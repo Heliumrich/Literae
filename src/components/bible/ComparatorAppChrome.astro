@@ -1,0 +1,37 @@
+---
+import Fleur from '../Fleur.astro';
+interface Props { position: 'header' | 'footer' }
+const { position } = Astro.props;
+---
+
+{position === 'header' ? (
+  <header class="comparator-app-header" aria-label="Literae">
+    <Fleur class="comparator-app-logo" />
+    <span class="brand-name">Literae</span>
+  </header>
+) : (
+  <footer class="comparator-app-footer">Literae · <em>Tolle, lege.</em></footer>
+)}
+
+<style>
+  .comparator-app-header, .comparator-app-footer { display: none; }
+  :global(html[data-comparator-mode="standalone"] .site-header),
+  :global(html[data-comparator-mode="standalone"] .site-footer),
+  :global(html[data-comparator-mode="standalone"] .page-intro),
+  :global(html[data-comparator-mode="standalone"] .comparator-bottom-space) { display: none; }
+  :global(html[data-comparator-mode="standalone"]) .comparator-app-header {
+    display: flex; align-items: center; gap: .5rem;
+    padding: max(.45rem, env(safe-area-inset-top)) max(.75rem, env(safe-area-inset-right)) .45rem max(.75rem, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--border); font-size: .95rem;
+  }
+  :global(html[data-comparator-mode="standalone"] .comparator-app-logo) { width: 1.3rem; height: 1.3rem; color: var(--gold); }
+  :global(html[data-comparator-mode="standalone"]) .comparator-app-footer {
+    display: block; padding: .5rem .75rem max(.5rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border); color: var(--text-subtle); font-size: .75rem; text-align: center;
+  }
+  :global(html[data-comparator-mode="standalone"] .comparator-wrap) {
+    width: auto; margin-inline: max(.375rem, env(safe-area-inset-left)) max(.375rem, env(safe-area-inset-right)); padding-top: .5rem;
+  }
+  :global(html[data-comparator-mode="standalone"] .comparator-controls) { position: static; }
+  :global(html[data-comparator-mode="standalone"] .passage-navigation) { padding-top: 1rem; }
+</style>

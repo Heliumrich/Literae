@@ -1,10 +1,13 @@
 ---
+import ComparatorAppChrome from "../../components/bible/ComparatorAppChrome.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getOfflineBible } from "../../lib/offline/bible-build";
 import Comparator from "../../components/bible/Comparator.svelte";
 import { getBibleTranslations, getBibleNavigationBooks } from "../../lib/bible-server";
 
 export const prerender = true;
 
+const offlineBible = getOfflineBible();
 const translations = getBibleTranslations();
 const navigationBooks = getBibleNavigationBooks();
 ---
@@ -13,6 +16,23 @@ const navigationBooks = getBibleNavigationBooks();
   title="Comparateur"
   description="Collationner les versions françaises de la Sainte Écriture — Crampon, Fillion, Sacy, Segond, Ostervald, Vulgate."
 >
+  <Fragment slot="head">
+    <script is:inline>
+      // Only this page has an installed-app shell. Run before paint on iOS too.
+      const displayMode = window.matchMedia('(display-mode: standalone)');
+      const renderAppMode = () => {
+        document.documentElement.dataset.comparatorMode = displayMode.matches || navigator.standalone ? 'standalone' : 'browser';
+      };
+      renderAppMode();
+      displayMode.addEventListener('change', renderAppMode);
+    </script>
+    <link rel="manifest" href="/scriptorium/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/scriptorium/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Literae" />
+  </Fragment>
+  <ComparatorAppChrome slot="app-header" position="header" />
+  <ComparatorAppChrome slot="app-footer" position="footer" />
   <main>
     <div class="page-wrap comparator-wrap">
       <header class="page-intro">
@@ -23,9 +43,9 @@ const navigationBooks = getBibleNavigationBooks();
           éclairer le texte, verset après verset.
         </p>
       </header>
-      <Comparator client:only="svelte" initialTranslations={translations} initialNavigationBooks={navigationBooks} />
+      <Comparator client:only="svelte" offlineBible={offlineBible} initialTranslations={translations} initialNavigationBooks={navigationBooks} />
     </div>
-    <div class="h-20 sm:h-28"></div>
+    <div class="comparator-bottom-space h-20 sm:h-28"></div>
   </main>
 </BaseLayout>
 

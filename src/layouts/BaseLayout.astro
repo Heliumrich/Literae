@@ -43,6 +43,7 @@ const canonical = new URL(canonicalPath, `${isArtPath ? ART_ORIGIN : MAIN_ORIGIN
     <meta name="twitter:description" content={description} />
     <meta name="theme-color" content="#f1eadc" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <slot name="head" />
     {gallery && <link rel="preconnect" href="https://api.literae.ch" crossorigin />}
     <script is:inline>
       try {
@@ -59,9 +60,11 @@ const canonical = new URL(canonicalPath, `${isArtPath ? ART_ORIGIN : MAIN_ORIGIN
     <a class="skip-link" href="#main-content">Aller au contenu</a>
     <div class="flex min-h-dvh flex-col">
       <Header />
+      <slot name="app-header" />
       <div id="main-content" class="flex-1" tabindex="-1">
         <slot />
       </div>
+      <slot name="app-footer" />
       <Footer />
     </div>
     {

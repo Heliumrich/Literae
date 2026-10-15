@@ -1,0 +1,16 @@
+{
+  "id": "/scriptorium/comparateur",
+  "name": "Literae — Le comparateur biblique",
+  "short_name": "Literae",
+  "description": "Lire et comparer les traductions de la Bible, même hors ligne.",
+  "lang": "fr",
+  "start_url": "/scriptorium/comparateur",
+  "scope": "/scriptorium/",
+  "display": "standalone",
+  "background_color": "#f1eadc",
+  "theme_color": "#002654",
+  "icons": [
+    {"src": "/scriptorium/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/scriptorium/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

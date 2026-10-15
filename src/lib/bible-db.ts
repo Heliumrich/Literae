@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 
-function resolveDbPath() {
+export function resolveDbPath() {
   const candidates = [
     process.env.BIBLE_DB,
     path.resolve(process.cwd(), "data/bible.db"),

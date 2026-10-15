@@ -26,3 +26,7 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+# Résultats des tests navigateur
+/test-results/
+/playwright-report/
