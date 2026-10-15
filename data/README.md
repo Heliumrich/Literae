@@ -12,19 +12,19 @@ Le build mémorise le **chemin absolu** du snapshot utilisé pour générer le c
 
 Le site classique ouvre ce fichier avec `mode=ro&immutable=1`, `readonly: true` et `query_only = ON`. Il n’écrit pas dans la base, ne crée ni n’utilise de `-wal` ou `-shm` et ne prend pas de verrous SQLite. Le snapshot reste figé ; une mise à jour crée un autre fichier. Au premier accès, les logs indiquent `[Bible] <chemin absolu> (mode=ro, immutable=1)`.
 
-La PWA utilise les mêmes données : le build exporte une copie statique dans `dist/client/scriptorium/donnees/` pour le téléchargement sur téléphone. Le lecteur installé interroge ensuite sa copie locale en mémoire avec SQLite WebAssembly, en lecture seule. Les mises à jour du VPS ne forcent pas le téléchargement sur téléphone.
+La PWA utilise les mêmes données : le build exporte une copie statique dans `dist/client/scriptorium/donnees/` pour le téléchargement sur téléphone. Le lecteur installé interroge ensuite sa copie locale en mémoire avec SQLite WebAssembly, en lecture seule. Le navigateur classique utilise aussi sa copie téléchargée lorsque le réseau est indisponible, sur mobile et ordinateur. Les mises à jour du VPS ne forcent pas le téléchargement sur téléphone.
 
 ## Déploiement sur le VPS
 
 Lors du passage depuis l’ancienne version, supprimer l’ancienne copie avant le pull évite un conflit Git si elle avait été remplacée manuellement :
 
 ```bash
-cd /var/www/literae
+cd /var/www/scriptorium
 rm -f data/bible.db data/bible.db-wal data/bible.db-shm
 git pull
 npm ci
 npm run build
-# Redémarrer ensuite le service Node utilisé sur le VPS.
+sudo systemctl restart scriptorium.service
 ```
 
 Aucun `.env` n’est nécessaire pour la Bible. Aucun `wget` ni nettoyage SQLite n’est nécessaire aux mises à jour suivantes. Un échec de récupération Git arrête le build et conserve la sélection précédente.

@@ -4,8 +4,7 @@
   import { restoreTranslationIds, type BibleTranslation } from '../../lib/bible-translations';
   import { getBibleNavigation, type BibleCatalogBook } from '../../lib/bible-navigation';
   import OfflinePanel from './OfflinePanel.svelte';
-  import { isInstalledComparator } from '../../lib/offline/display-mode';
-  import { offlineStatus, offlineQuery } from '../../lib/offline/client';
+  import { readComparatorPassage, OfflineBibleRequiredError } from '../../lib/offline/passage';
   import type { OfflineBible } from '../../lib/offline/types';
   import PassagePicker from './PassagePicker.svelte';
 
@@ -154,22 +153,7 @@
       if (parsed.verseEnd) params.set('verseEnd', String(parsed.verseEnd));
       requestedIds.forEach(id => params.append('t', String(id)));
 
-      let data;
-      let local = null;
-      if (isInstalledComparator()) {
-        try { local = await offlineStatus(); } catch {}
-      }
-      if (local) {
-        data = await offlineQuery(params, requestedIds.map(id => translations.find(t => t.id === id)!.code));
-      } else {
-        const url = `/api/bible/verses?${params}`;
-        const res = await fetch(url);
-        if (!res.ok) {
-          const detail = (await res.text()).slice(0, 1000);
-          throw new Error(`Passage indisponible (HTTP ${res.status}, ${url}) : ${detail}`);
-        }
-        data = await res.json();
-      }
+      const data = await readComparatorPassage(params, requestedIds.map(id => translations.find(t => t.id === id)!.code));
       if (version !== loadVersion) return;
 
       columns = (data.results ?? []).map((column: Column, index: number) => ({
@@ -186,7 +170,7 @@
       nav = data.navigation ?? getBibleNavigation(initialNavigationBooks, current);
     } catch (e) {
       if (version !== loadVersion) return;
-      error = navigator.onLine ? 'Le passage n’a pas pu être chargé.' : `Téléchargez d’abord la Bible depuis « Emporter le comparateur » pour lire hors ligne.`;
+      error = e instanceof OfflineBibleRequiredError ? e.message : 'Le passage n’a pas pu être chargé.';
       columns = [];
       console.error(e);
     } finally {

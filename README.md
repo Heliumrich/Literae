@@ -107,7 +107,7 @@ Le comparateur est une PWA installable : invitation native sur Android lorsque l
 
 Le seul panneau **Emporter le comparateur** regroupe le téléchargement puis l’installation. Le téléchargement fonctionne aussi directement dans l’application installée ; aucune étape préalable dans le navigateur n’est obligatoire.
 
-La PWA vérifie les releases de [French-Bibles](https://github.com/Heliumrich/French-Bibles) à l’ouverture et propose les mises à jour avec leur taille, sans téléchargement automatique. Les transferts GitHub passent par le VPS via l’API existante, pour éviter les erreurs de téléchargement inter-domaines. L’interface et ses polices se mettent à jour séparément de la Bible. Le site classique conserve sa navigation et sa base serveur.
+La PWA vérifie les releases de [French-Bibles](https://github.com/Heliumrich/French-Bibles) à l’ouverture et propose les mises à jour avec leur taille, sans téléchargement automatique. Les transferts GitHub passent par le VPS via l’API existante, pour éviter les erreurs de téléchargement inter-domaines. L’interface et ses polices se mettent à jour séparément de la Bible. Le navigateur classique conserve sa navigation et utilise le serveur tant qu’il est accessible. Après téléchargement de la Bible, il utilise sa copie locale hors ligne, sur ordinateur comme sur mobile, sans installation obligatoire.
 
 La version installée réutilise le même comparateur Svelte. Le stockage dépend des quotas et de l’espace de l’appareil ; il peut être libéré par le système. L’installation sur iOS doit être suivie du téléchargement depuis l’application ouverte sur l’écran d’accueil.
 
@@ -170,8 +170,8 @@ Le build produit :
 git pull
 npm ci
 npm run build
-# Redémarrer le service Node existant, ou lancer :
-npm start
+# Sur le VPS actuel :
+sudo systemctl restart scriptorium.service
 ```
 
 Le build inclut le chemin absolu du snapshot SQLite utilisé pour générer le comparateur ; le serveur retrouve sa base quel que soit son dossier de lancement. Reconstruire puis redémarrer applique une nouvelle base. Si le projet est déplacé, reconstruire pour enregistrer son nouveau chemin. Un `git pull` seul ne déclenche pas le build. Après chaque changement dans Directus, reconstruisez puis redéployez le site.
