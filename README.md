@@ -32,7 +32,7 @@ Le site est conçu pour être statique partout où cela est possible.
 | Comparateur biblique | Unique îlot hydraté | Svelte |
 | Lecture des versets et navigation | Unique route serveur | Node.js + SQLite |
 
-Directus n’est interrogé que pendant `npm run build`. Une modification d’œuvre, de personnalité ou de prière devient donc publique au prochain build, sans appel au CMS lors de la consultation des pages.
+Les métadonnées éditoriales de Directus sont lues pendant `npm run build`. Une modification de notice devient donc publique au prochain build, sans requête de métadonnées lors de la consultation des pages. Les images et les EPUB restent servis par Directus à la demande.
 
 La page du comparateur est elle aussi prérendue. La liste des traductions et l’index des livres et chapitres sont extraits de SQLite au build et transmis à l’îlot Svelte. Le sélecteur de passage présente les livres par Testament, puis leurs chapitres, sans requête avant le choix du chapitre à lire. Seul `/api/bible/verses` ouvre `bible.db` à l’exécution.
 
@@ -73,12 +73,12 @@ En développement, les liens entre le site principal et la galerie restent locau
 
 ## Variables d’environnement
 
-Les variables de domaines sont facultatives. Le jeton Directus est nécessaire au build si une collection n’est pas lisible par le rôle public (c’est actuellement le cas de `books`).
+Toutes les variables sont facultatives avec les accès publics actuels. Un jeton Directus ne devient nécessaire au build que si une collection cesse d’être lisible par le rôle public.
 
 | Variable | Valeur par défaut | Description |
 |---|---|---|
 | `DIRECTUS_URL` | `https://api.literae.ch` | URL publique de Directus |
-| `DIRECTUS_TOKEN` | — | Jeton de lecture du CMS au build ; requis actuellement pour `books` |
+| `DIRECTUS_TOKEN` | — | Jeton de lecture facultatif du CMS au build ; jamais transmis au lecteur |
 | `PUBLIC_MAIN_SITE_URL` | `https://literae.ch` | Origine publique du site principal |
 | `PUBLIC_ART_SITE_URL` | `https://art.literae.ch` | Origine publique de la galerie |
 
@@ -96,7 +96,7 @@ Les collections actuellement consommées sont :
 
 Les fiches musicales affichent les descriptions Markdown, les tags et les liens externes renseignés dans le CMS. Les types généraux des artistes sont distincts de leurs rôles sur chaque album. Seuls les albums et artistes `published` sont exposés, y compris dans les relations. Les filtres (recherche, tags, types et artiste associé) utilisent `/musique/albums.json` et `/musique/artistes.json`, générés au build. Aucun lecteur embarqué ou import de pistes n’est utilisé.
 
-Seuls les éléments dont le statut est `published` sont intégrés. Les collections sont lues par pages de 100 éléments afin d’accompagner leur croissance. Les requêtes identiques sont mutualisées pendant le build.
+Pour les collections avec un statut, seuls les éléments `published` sont intégrés ; les ouvrages utilisent le champ `archived` et seuls les livres non archivés sont inclus. Les collections sont lues par pages de 100 éléments afin d’accompagner leur croissance. Les requêtes identiques sont mutualisées pendant le build.
 
 Les images restent servies par Directus avec les transformations `thumbnail`, `medium`, `large` et `xlarge`. Le fichier original n’est demandé que depuis la visionneuse lorsque **Qualité originale** est activée.
 
@@ -108,15 +108,15 @@ La visionneuse navigable du catalogue et des collections d’une personnalité p
 
 Le catalogue `/scriptorium/bibliotheque` propose la recherche, les vues grille/liste, le tri par titre, auteur ou étiquettes et les mêmes filtres par tags que la galerie. L’accueil présente les quatre derniers ajouts et les personnalités présentent leurs ouvrages après leurs collections d’art.
 
-Les livres non archivés sont générés au build. En l’absence de champ `slug` dans `books`, l’URL combine le titre normalisé et les huit premiers caractères de l’UUID (`confessions-a758f0c9`). L’UUID complet identifie la progression, qui survit à un changement de titre. Changer le titre change toutefois l’URL de la fiche.
+Les notices des livres non archivés sont générées au build. En l’absence de champ `slug` dans `books`, l’URL combine le titre normalisé et les huit premiers caractères de l’UUID (`confessions-a758f0c9`). Changer le titre change l’URL de la fiche, mais conserve la progression des fichiers EPUB.
 
-Chaque fichier EPUB est copié au build dans `/scriptorium/bibliotheque/fichiers/` avec une URL versionnée par les métadonnées de l’asset. Le navigateur charge uniquement l’édition sélectionnée, depuis le site, sans jeton Directus ni dépendance au CORS du CMS. Un EPUB indisponible fait échouer le build. Les labels utilisent la description du fichier si renseignée, sinon son nom de téléchargement ; pour différencier les traductions, renseignez ces descriptions dans Directus.
+Le navigateur télécharge directement l’EPUB sélectionné depuis `/assets/<UUID>` sur Directus, en accès public et sans cookie ni jeton. Aucun EPUB n’est téléchargé ou copié pendant le build. Un paramètre de révision issu des métadonnées du fichier renouvelle le cache HTTP si l’asset est modifié. Le CMS doit autoriser l’origine exacte du site dans son CORS (`https://literae.ch` en production, avec `Vary: Origin`). En développement local, autorisez aussi l’origine locale utilisée. Les labels utilisent la description du fichier si renseignée, sinon son nom de téléchargement ; pour différencier les traductions, renseignez ces descriptions dans Directus.
 
 Le lecteur EPUB.js utilise le défilement continu et le sommaire de l’ouvrage. Les XHTML voisin précédent et suivant sont préchargés ; les vues éloignées sont libérées par le gestionnaire continu. Les scripts contenus dans les EPUB restent désactivés. La police du corps, la taille, les marges, la justification et le fond sont réglables. Le fond automatique suit le thème du site ; Blanc, Crème, Nuit et Noir OLED fixent aussi une couleur de texte lisible. Les titres conservent leur police. Literata, Lora et Libre Baskerville sont auto-hébergées en WOFF2, avec variantes latines normale/italique et licences OFL ; leurs fichiers ne sont demandés qu’à la sélection, hors du précache du comparateur.
 
-Les réglages et la progression restent dans le `localStorage` du navigateur. Un seul signet est conservé par ouvrage, quelle que soit sa traduction. La reprise dans le même fichier utilise un EPUB CFI précis ; dans une autre édition elle retrouve la section par son titre, puis une position relative, ou se replie sur la proportion du livre si les sommaires diffèrent. Cette correspondance entre traductions est approximative. Aucun compte ni synchronisation entre appareils n’est utilisé. Le lecteur signale si le navigateur refuse la sauvegarde. La bibliothèque n’est pas incluse dans le mode hors ligne de la PWA du comparateur.
+Les réglages et la progression restent dans le `localStorage` du navigateur. Chaque fichier EPUB a son propre signet CFI, identifié par l’UUID Directus complet (36 caractères, sans troncature ni dépendance au nom du fichier ou à l’URL). Une traduction jamais ouverte commence au début ; revenir sur une traduction reprend uniquement son propre signet. Le dernier choix d’édition est mémorisé séparément pour chaque livre. L’ancien signet commun est récupéré uniquement pour le fichier auquel il appartenait. Aucun compte ni synchronisation entre appareils n’est utilisé. Le lecteur signale si le navigateur refuse la sauvegarde. La bibliothèque n’est pas incluse dans le mode hors ligne de la PWA du comparateur.
 
-Les modules `books-server.ts` et les routes statiques gèrent le CMS ; `books-client.ts` gère le catalogue ; `src/lib/reader/` et `EpubReader.astro` isolent la lecture. Validation : `npm run test:server` et `npm run test:pwa` (avec un navigateur Playwright installé).
+`books-server.ts` lit les métadonnées du CMS pour les pages statiques ; `books-client.ts` gère le catalogue ; `src/lib/reader/` et `EpubReader.astro` isolent la lecture. Validation : `npm run test:server` et `npm run test:pwa` (avec un navigateur Playwright installé). Les tests du vrai EPUB servent le build local sous l’origine de production et téléchargent réellement l’asset public Directus : le navigateur vérifie le CORS et les tests contrôlent l’absence d’authentification. Deux petits EPUB de test vérifient séparément l’indépendance des signets entre traductions.
 
 ## Comparateur sur smartphone et hors ligne
 

@@ -2,13 +2,34 @@ import { test, expect, devices, type Page, type Frame } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
 const LIBRARY = '/scriptorium/bibliotheque';
+const MAIN_ORIGIN = 'https://literae.ch';
+const LOCAL_ORIGIN = 'http://127.0.0.1:4322';
 let bookPath: string;
+let bookId: string;
+
+// Keep the real production origin for CORS. Only the site's HTML/assets come
+// from our local build; EPUB requests reach the public Directus server unchanged.
+test.use({
+  baseURL: MAIN_ORIGIN,
+  ...(process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost' } } : {}),
+});
+const localUrl = (url: string) => {
+  const parsed = new URL(url);
+  return LOCAL_ORIGIN + parsed.pathname + parsed.search;
+};
+test.beforeEach(async ({ context }) => {
+  await context.route(`${MAIN_ORIGIN}/**`, async route => {
+    const response = await route.fetch({ url: localUrl(route.request().url()) });
+    await route.fulfill({ response });
+  });
+});
 
 test.beforeAll(async ({ request }) => {
-  const response = await request.get(`${LIBRARY}.json`);
+  const response = await request.get(`${LOCAL_ORIGIN}${LIBRARY}.json`);
   const { items } = await response.json();
   expect(items.length).toBeGreaterThan(0);
   bookPath = items[0].href;
+  bookId = items[0].id;
 });
 
 async function openBook(page: Page) {
@@ -16,10 +37,16 @@ async function openBook(page: Page) {
   await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
   await expect(page.locator('[data-reader="error"]')).toBeHidden();
   await expect(page.locator('[data-reader="toc"]')).toBeEnabled();
+  const id = await page.locator('[data-reader="edition"]').inputValue();
+  await expect.poll(() => page.evaluate(id => JSON.parse(localStorage.getItem(`literae-epub-progress-v2:${id}`) || '{}').cfi, id)).toMatch(/^epubcfi\(/);
 }
 async function goToSection(page: Page, text: string) {
+  const id = await page.locator('[data-reader="edition"]').inputValue();
+  const savedCfi = () => page.evaluate(id => JSON.parse(localStorage.getItem(`literae-epub-progress-v2:${id}`) || '{}').cfi, id);
+  const previous = await savedCfi();
   const option = page.locator('[data-reader="toc"] option').filter({ hasText: new RegExp(`^${text}$`) });
   await page.locator('[data-reader="toc"]').selectOption((await option.getAttribute('value'))!);
+  await expect.poll(savedCfi).not.toBe(previous);
 }
 async function textFrame(page: Page, heading: string): Promise<Frame> {
   let found: Frame | undefined;
@@ -39,7 +66,7 @@ test('navigation, nouveautés, filtres, grille/liste et tri', async ({ page }) =
   await page.getByRole('button', { name: 'Ouvrir le menu', exact: true }).click();
   const link = page.locator('#mobile-nav').getByRole('link', { name: 'Bibliothèque' });
   await expect(link).toHaveAttribute('href', `https://literae.ch${LIBRARY}`);
-  await page.goto(LIBRARY);
+  await link.click();
   await expect(page).toHaveURL(new RegExp(`${LIBRARY}$`));
   await expect(page.locator('#catalog-status')).toContainText('1 ouvrage');
   await page.getByRole('button', { name: 'Liste', exact: true }).click();
@@ -54,20 +81,39 @@ test('navigation, nouveautés, filtres, grille/liste et tri', async ({ page }) =
   await expect(page.locator('#catalog-empty')).toContainText('Aucun ouvrage');
   await page.getByRole('button', { name: 'Effacer les filtres', exact: true }).click();
   await expect(page.locator('#catalog-grid .book-card')).toHaveCount(1);
-  const person = await page.request.get('/personalites/aurelius-augustinus');
+  const person = await page.request.get(`${LOCAL_ORIGIN}/personalites/aurelius-augustinus`);
   expect(await person.text()).toContain('Ouvrages de Augustin');
   expect(await person.text()).toContain(`https://literae.ch${bookPath}`);
 });
 
 test('permet de réessayer après un échec de téléchargement de l’EPUB', async ({ page }) => {
-  await page.route('**/scriptorium/bibliotheque/fichiers/*.epub', route => route.abort('internetdisconnected'));
+  await page.route('https://api.literae.ch/assets/**', route => route.abort('internetdisconnected'));
   await page.goto(bookPath);
   await expect(page.locator('[data-reader="error"]')).toBeVisible();
-  await page.unroute('**/scriptorium/bibliotheque/fichiers/*.epub');
+  await page.unroute('https://api.literae.ch/assets/**');
   await page.getByRole('button', { name: 'Réessayer', exact: true }).click();
   await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
   await expect(page.locator('[data-reader="error"]')).toBeHidden();
   await expect(page.locator('[data-reader="toc"]')).toBeEnabled();
+});
+
+test('récupère l’ancien signet uniquement pour son fichier d’origine', async ({ page }) => {
+  await openBook(page);
+  await goToSection(page, 'Livre troisième');
+  await textFrame(page, 'Livre troisième');
+  const id = await page.locator('[data-reader="edition"]').inputValue();
+  await expect.poll(() => page.evaluate(id => JSON.parse(localStorage.getItem(`literae-epub-progress-v2:${id}`) || '{}').cfi, id)).toMatch(/^epubcfi\(/);
+  const progress = await page.evaluate(id => JSON.parse(localStorage.getItem(`literae-epub-progress-v2:${id}`)!), id);
+  await page.addInitScript(({ id, bookId, progress }) => {
+    const key = `literae-epub-progress-v2:${id}`;
+    localStorage.setItem(`literae-book-progress-v1:${bookId}`, JSON.stringify({ ...progress,
+      edition: `/scriptorium/bibliotheque/fichiers/${id}-123abc456def.epub`,
+    }));
+    localStorage.removeItem(key);
+  }, { id, bookId, progress });
+  await page.reload();
+  await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('[data-reader="toc"]')).toHaveValue(/livre_troisieme/);
 });
 
 for (const device of ['Desktop Chrome', 'Pixel 7']) {
@@ -80,7 +126,15 @@ for (const device of ['Desktop Chrome', 'Pixel 7']) {
       const errors: string[] = [];
       page.on('request', request => { if (request.url().includes('/reader-fonts/')) fontRequests.push(request.url()); });
       page.on('pageerror', error => errors.push(error.message));
+      const epubResponse = page.waitForResponse(response => response.url().startsWith('https://api.literae.ch/assets/') && response.request().resourceType() === 'fetch');
       await openBook(page);
+      const response = await epubResponse;
+      expect(response.status()).toBe(200);
+      expect(await response.headerValue('access-control-allow-origin')).toBe(MAIN_ORIGIN);
+      const headers = await response.request().allHeaders();
+      expect(headers.origin).toBe(MAIN_ORIGIN);
+      expect(headers.authorization).toBeUndefined();
+      expect(headers.cookie).toBeUndefined();
       await expect(page.locator('[data-reader="toc"] option').filter({ hasText: /^Livre / })).toHaveCount(13);
       await goToSection(page, 'Livre premier');
       const frame = await textFrame(page, 'Livre premier');
@@ -121,7 +175,8 @@ for (const device of ['Desktop Chrome', 'Pixel 7']) {
       await page.getByText('Réglages de lecture', { exact: false }).click();
       await page.locator('[data-reader="size"]').fill('24');
       await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('literae-reader-settings-v1') || '{}').size)).toBe(24);
-      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('literae-book-progress-v1:a758f0c9-c999-4d8a-ae1d-42f8a7c66c92') || '{}').sectionLabel)).toBe('Livre cinquième');
+      const id = await page.locator('[data-reader="edition"]').inputValue();
+      await expect.poll(() => page.evaluate(id => JSON.parse(localStorage.getItem(`literae-epub-progress-v2:${id}`) || '{}').cfi, id)).toMatch(/^epubcfi\(/);
       await page.close();
       const reopened = await context.newPage();
       await openBook(reopened);
@@ -130,45 +185,65 @@ for (const device of ['Desktop Chrome', 'Pixel 7']) {
       await expect(reopened.locator('[data-reader="progress"]')).toContainText('Position enregistrée');
     });
 
-    test('charge une seule traduction puis transpose le signet vers un EPUB structuré autrement', async ({ page }) => {
+    test('garde un signet distinct par fichier, même avec des noms et des UUID partiellement identiques', async ({ page }) => {
       const downloads: string[] = [];
       const errors: string[] = [];
       page.on('pageerror', error => errors.push(error.message));
-      const editions = ['a', 'b'].map(id => ({ id, label: `Traduction ${id.toUpperCase()}`, url: `/reader-test/${id}.epub`, size: 1000 }));
+      const editions = ['11111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111112'].map((id, index) => ({
+        id, label: `Traduction ${index === 0 ? 'A' : 'B'}`, url: `https://api.literae.ch/assets/${id}/meme-nom.epub?v=test`, size: 1000,
+      }));
+      const [a, b] = editions;
+      const savedCfi = (id: string) => page.evaluate(id => JSON.parse(localStorage.getItem(`literae-epub-progress-v2:${id}`) || '{}').cfi, id);
       await page.route(`**${bookPath}`, async route => {
-        const response = await route.fetch();
+        const response = await route.fetch({ url: LOCAL_ORIGIN + bookPath });
         let body = await response.text();
         body = body.replace(/data-editions="[^"]*"/, `data-editions="${JSON.stringify(editions).replaceAll('"', '&quot;')}"`)
           .replace(/(<select[^>]*data-reader="edition"[^>]*>)[\s\S]*?<\/select>/,
             `$1${editions.map(e => `<option value="${e.id}">${e.label}</option>`).join('')}</select>`);
         await route.fulfill({ response, body });
       });
-      await page.route('**/reader-test/*.epub', async route => {
-        const id = new URL(route.request().url()).pathname.endsWith('a.epub') ? 'a' : 'b';
+      await page.route('https://api.literae.ch/assets/11111111-1111-4111-8111-*/**', async route => {
+        const id = route.request().url().includes(a.id) ? 'a' : 'b';
         downloads.push(id);
-        await route.fulfill({ body: await readFile(new URL(`../fixtures/reader-${id}.epub`, import.meta.url)), contentType: 'application/epub+zip' });
+        await route.fulfill({ body: await readFile(new URL(`../fixtures/reader-${id}.epub`, import.meta.url)), contentType: 'application/epub+zip', headers: { 'Access-Control-Allow-Origin': MAIN_ORIGIN } });
       });
       await openBook(page);
       expect(downloads).toEqual(['a']);
       await goToSection(page, 'Livre deuxième');
       const frame = await textFrame(page, 'Livre deuxième');
       await expect(frame.locator('p').first()).toContainText('Édition A');
+      await expect.poll(() => savedCfi(a.id)).toMatch(/^epubcfi\(/);
+      const beforeScroll = await savedCfi(a.id);
       await page.locator('[data-reader="viewport"]').hover({ position: { x: 100, y: 100 } });
       await page.mouse.wheel(0, 1200);
-      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('literae-book-progress-v1:a758f0c9-c999-4d8a-ae1d-42f8a7c66c92') || '{}').sectionFraction)).toBeGreaterThan(.02);
-      await page.locator('[data-reader="edition"]').selectOption('b');
+      await expect.poll(() => savedCfi(a.id)).not.toBe(beforeScroll);
+      const aPosition = await savedCfi(a.id);
+      await page.locator('[data-reader="edition"]').selectOption(b.id);
+      await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
+      await expect(page.locator('[data-reader="toc"]')).toHaveValue('preface.xhtml');
+      const translated = await textFrame(page, 'Préface');
+      await expect(translated.locator('p').first()).toContainText('Édition B');
+      expect(await savedCfi(a.id)).toBe(aPosition);
+      expect(downloads).toEqual(['a', 'b']);
+      await goToSection(page, 'Livre premier');
+      await textFrame(page, 'Livre premier');
+      await expect.poll(() => savedCfi(b.id)).toMatch(/^epubcfi\(/);
+      await expect(page.locator('[data-reader="toc"]')).toHaveValue('premier.xhtml');
+      const bPosition = await savedCfi(b.id);
+      await page.locator('[data-reader="edition"]').selectOption(a.id);
       await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
       await expect(page.locator('[data-reader="toc"]')).toHaveValue('deuxieme.xhtml');
-      const translated = await textFrame(page, 'Livre deuxième');
-      await expect(translated.locator('p').first()).toContainText('Édition B');
-      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('literae-book-progress-v1:a758f0c9-c999-4d8a-ae1d-42f8a7c66c92') || '{}').sectionIndex)).toBe(2);
-      expect(downloads).toEqual(['a', 'b']);
+      expect(await savedCfi(b.id)).toBe(bPosition);
+      await page.locator('[data-reader="edition"]').selectOption(b.id);
+      await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
+      await expect(page.locator('[data-reader="toc"]')).toHaveValue('premier.xhtml');
+      b.url = b.url.replace('meme-nom.epub?v=test', 'nom-modifie.epub?v=test2');
       await page.reload();
       await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
-      await expect(page.locator('[data-reader="edition"]')).toHaveValue('b');
-      await expect(page.locator('[data-reader="toc"]')).toHaveValue('deuxieme.xhtml');
-      await page.locator('[data-reader="edition"]').selectOption('a');
-      await page.locator('[data-reader="edition"]').selectOption('b');
+      await expect(page.locator('[data-reader="edition"]')).toHaveValue(b.id);
+      await expect(page.locator('[data-reader="toc"]')).toHaveValue('premier.xhtml');
+      await page.locator('[data-reader="edition"]').selectOption(a.id);
+      await page.locator('[data-reader="edition"]').selectOption(b.id);
       await expect(page.locator('[data-reader="viewport"]')).toHaveAttribute('aria-busy', 'false');
       await expect(page.locator('[data-reader="error"]')).toBeHidden();
       expect(errors).toEqual([]);

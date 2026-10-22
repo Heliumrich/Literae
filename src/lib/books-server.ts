@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { fetchAllFromDirectus, fileIdOf, getAssetURL } from './directus';
 import { normalizeText, parseTags } from './catalog';
-import { LIBRARY_PATH, type LibraryBook } from './books';
+import type { LibraryBook } from './books';
 
 type BookFile = {
   id: string; title: string | null; description: string | null; filename_download: string | null;
@@ -39,17 +39,8 @@ export async function fetchBooks(): Promise<LibraryBook[]> {
       const filename = (file.filename_download || file.title || 'Édition').replace(/\.epub$/i, '');
       return [{
         id: String(file.id), label: (file.description || filename).replace(/<[^>]*>/g, '').trim(),
-        url: `${LIBRARY_PATH}/fichiers/${file.id}-${revision}.epub`, size: Number(file.filesize) || 0,
+        url: `${getAssetURL(file.id)}?v=${revision}`, size: Number(file.filesize) || 0,
       }];
     }),
   }));
-}
-
-/** Never expose the build credential or depend on cross-origin asset fetching. */
-export async function fetchBookFile(id: string): Promise<ArrayBuffer> {
-  const headers: Record<string, string> = {};
-  if (import.meta.env.DIRECTUS_TOKEN) headers.Authorization = `Bearer ${import.meta.env.DIRECTUS_TOKEN}`;
-  const response = await fetch(getAssetURL(id)!, { headers, signal: AbortSignal.timeout(60000) });
-  if (!response.ok) throw new Error(`EPUB Directus ${id} : HTTP ${response.status}`);
-  return response.arrayBuffer();
 }

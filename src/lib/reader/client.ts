@@ -2,7 +2,7 @@ import type { Book, Contents, Location, NavItem, Rendition } from 'epubjs';
 import type Section from 'epubjs/types/section';
 import type { BookEdition } from '../books';
 import { PALETTES, SETTINGS_KEY, parseSettings, readerCss } from './preferences';
-import { correspondingSection, parseProgress, progressKey, type ReadingProgress } from './progress';
+import { lastEditionKey, legacyProgressForFile, parseProgress, progressKey, type ReadingProgress } from './progress';
 
 type SectionView = { index: number; element: HTMLElement; displayed: boolean; contents?: Contents };
 // EPUB.js exposes these at runtime but omits them from its declaration files.
@@ -31,14 +31,14 @@ async function initReader(root: HTMLElement) {
   const error = el<HTMLParagraphElement>('error');
   const progressLabel = el<HTMLParagraphElement>('progress');
   const editions: BookEdition[] = JSON.parse(root.dataset.editions || '[]');
-  const key = progressKey(root.dataset.bookId!);
+  const editionKey = lastEditionKey(root.dataset.bookId!);
   let settings = parseSettings(readLocal(SETTINGS_KEY));
-  let bookmark = parseProgress(readLocal(key));
+  let bookmark: ReadingProgress | null = null;
   let book: Book | undefined;
   let rendition: ContinuousRendition | undefined;
   let sections: Section[] = [];
   let chapters: Chapter[] = [];
-  let selected = editions.find(edition => edition.url === bookmark?.edition) || editions[0];
+  let selected = editions.find(edition => edition.id === readLocal(editionKey)) || editions[0];
   let epoch = 0;
   let controller: AbortController | undefined;
   let openingTask: Promise<void> = Promise.resolve();
@@ -78,11 +78,6 @@ async function initReader(root: HTMLElement) {
     message.textContent = '';
     viewport.setAttribute('aria-busy', 'false');
   }
-  function sectionLabel(index: number) {
-    const href = sections.find(section => section.index === index)?.href.split('#')[0];
-    return chapters.find(chapter => chapter.href.split('#')[0] === href)?.label || '';
-  }
-
   /** Keep the neighbouring XHTML parsed; EPUB.js manages nearby rendered frames. */
   function preloadNeighbours(index: number) {
     const currentBook = book;
@@ -108,11 +103,8 @@ async function initReader(root: HTMLElement) {
     const bounds = view?.element.getBoundingClientRect();
     const top = rendition.manager.container.getBoundingClientRect().top;
     const fraction = bounds?.height ? Math.max(0, Math.min(.999, (top - bounds.top) / bounds.height)) : 0;
-    bookmark = {
-      edition: selected.url, cfi: location.start.cfi, sectionIndex: index, sectionCount: sections.length,
-      sectionLabel: sectionLabel(index), sectionFraction: fraction, updated: Date.now(),
-    };
-    storageAvailable = writeLocal(key, bookmark);
+    bookmark = { cfi: location.start.cfi, updated: Date.now() };
+    storageAvailable = writeLocal(progressKey(selected.id), bookmark);
     const percent = Math.min(100, Math.round((index + fraction) / Math.max(1, sections.length) * 100));
     progressLabel.textContent = `${percent} % · ${storageAvailable ? 'Position enregistrée sur cet appareil' : 'Sauvegarde indisponible dans ce navigateur'}`;
     previous.disabled = location.atStart;
@@ -124,20 +116,8 @@ async function initReader(root: HTMLElement) {
 
   async function restorePosition(progress: ReadingProgress | null, active: ContinuousRendition) {
     if (!progress) { await active.display(); return; }
-    if (progress.edition === selected.url) {
-      try { await active.display(progress.cfi); return; } catch { /* An edited file may invalidate its CFI. */ }
-    }
-    const index = correspondingSection(progress, sections.map(section => ({ index: section.index, label: sectionLabel(section.index) })));
-    await active.display(sections.find(section => section.index === index)?.href);
-    // Chapter labels are shared by many translations; within a chapter use its relative position.
-    await nextFrame();
-    const view = active.manager.views.all().find(view => view.index === index && view.displayed);
-    if (view) {
-      await view.contents?.document.fonts.ready;
-      const bounds = view.element.getBoundingClientRect();
-      const container = active.manager.container;
-      container.scrollTop += bounds.top - container.getBoundingClientRect().top + bounds.height * progress.sectionFraction;
-    }
+    try { await active.display(progress.cfi); }
+    catch { await active.display(); } // A replaced EPUB may invalidate its old CFI.
   }
 
   function requestEdition(id: string) {
@@ -167,6 +147,8 @@ async function initReader(root: HTMLElement) {
     viewport.replaceChildren();
     prefetched.clear();
     selected = requested;
+    bookmark = parseProgress(readLocal(progressKey(selected.id)))
+      || legacyProgressForFile(readLocal(`literae-book-progress-v1:${root.dataset.bookId}`), selected.id);
     selectEdition.value = id;
     toc.disabled = true;
     previous.disabled = next.disabled = true;
@@ -177,7 +159,7 @@ async function initReader(root: HTMLElement) {
     let openingBook: Book | undefined;
     try {
       const [{ default: ePub }, response] = await Promise.all([
-        import('epubjs'), fetch(selected.url, { signal: controller.signal }),
+        import('epubjs'), fetch(selected.url, { signal: controller.signal, mode: 'cors', credentials: 'omit' }),
       ]);
       if (!response.ok) throw new Error(`EPUB HTTP ${response.status}`);
       const buffer = await response.arrayBuffer();
@@ -212,6 +194,7 @@ async function initReader(root: HTMLElement) {
       await restorePosition(bookmark, active);
       if (currentEpoch !== epoch) return;
       canSave = true;
+      writeLocal(editionKey, selected.id);
       toc.disabled = false;
       viewport.setAttribute('aria-busy', 'false');
       message.textContent = bookmark ? 'Reprise de votre lecture.' : '';
@@ -256,7 +239,7 @@ async function initReader(root: HTMLElement) {
         await Promise.all(views.map(view => view.contents!.document.fonts.ready));
         if (currentEpoch !== settingsEpoch || active !== rendition) return;
         active.resize(viewport.clientWidth, viewport.clientHeight);
-        if (saved?.edition === selected.url) await active.display(saved.cfi);
+        if (saved) await active.display(saved.cfi);
       } catch { /* A section may disappear as the continuous reader trims its frames. */ }
       finally {
         if (currentEpoch === settingsEpoch && active === rendition) {
@@ -292,8 +275,8 @@ async function initReader(root: HTMLElement) {
   });
   const resizeObserver = new ResizeObserver(() => { if (rendition && canSave) rendition.resize(viewport.clientWidth, viewport.clientHeight); });
   resizeObserver.observe(viewport);
-  document.addEventListener('visibilitychange', () => { if (document.hidden && bookmark && canSave) writeLocal(key, bookmark); });
-  window.addEventListener('pagehide', () => { if (bookmark) writeLocal(key, bookmark); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && bookmark && canSave) writeLocal(progressKey(selected.id), bookmark); });
+  window.addEventListener('pagehide', () => { if (bookmark) writeLocal(progressKey(selected.id), bookmark); });
   showSettings();
   await requestEdition(selected.id);
 }

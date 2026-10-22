@@ -1,23 +1,24 @@
 export type ReadingProgress = {
-  edition: string; cfi: string; sectionIndex: number; sectionCount: number;
-  sectionLabel: string; sectionFraction: number; updated: number;
+  cfi: string; updated: number;
 };
-export const progressKey = (bookId: string) => `literae-book-progress-v1:${bookId}`;
+/** Directus file UUIDs identify editions regardless of their name, URL or book. */
+export const progressKey = (fileId: string) => `literae-epub-progress-v2:${fileId}`;
+export const lastEditionKey = (bookId: string) => `literae-reader-edition-v1:${bookId}`;
 export function parseProgress(value: unknown): ReadingProgress | null {
   if (!value || typeof value !== 'object') return null;
   const p = value as ReadingProgress;
-  if (typeof p.edition !== 'string' || typeof p.cfi !== 'string' || !p.cfi.startsWith('epubcfi(')
-    || !Number.isInteger(p.sectionIndex) || !Number.isInteger(p.sectionCount) || p.sectionCount < 1
-    || p.sectionIndex < 0 || p.sectionIndex >= p.sectionCount || !Number.isFinite(p.sectionFraction)) return null;
-  return { ...p, sectionLabel: typeof p.sectionLabel === 'string' ? p.sectionLabel : '',
-    sectionFraction: Math.max(0, Math.min(.999, p.sectionFraction)) };
+  if (typeof p.cfi !== 'string' || !p.cfi.startsWith('epubcfi(') || !Number.isFinite(p.updated)) return null;
+  return { cfi: p.cfi, updated: p.updated };
 }
 
-/** CFIs belong to an edition. Map the shared bookmark by chapter, then proportion. */
-export function correspondingSection(progress: ReadingProgress, sections: { index: number; label: string }[]): number {
-  const normalize = (s: string) => s.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-  const label = normalize(progress.sectionLabel);
-  const match = label && sections.find(section => normalize(section.label) === label);
-  if (match) return match.index;
-  return sections[Math.min(sections.length - 1, Math.round(progress.sectionIndex / Math.max(1, progress.sectionCount - 1) * (sections.length - 1)))]?.index ?? 0;
+/** Preserve the previous bookmark only for the file that actually owned it. */
+export function legacyProgressForFile(value: unknown, fileId: string): ReadingProgress | null {
+  if (!value || typeof value !== 'object') return null;
+  const edition = (value as { edition?: unknown }).edition;
+  if (typeof edition !== 'string') return null;
+  try {
+    const path = new URL(edition, 'https://literae.ch').pathname;
+    const previousId = path.match(/\/fichiers\/([0-9a-f-]{36})-[0-9a-f]+\.epub$/i)?.[1];
+    return previousId === fileId ? parseProgress(value) : null;
+  } catch { return null; }
 }

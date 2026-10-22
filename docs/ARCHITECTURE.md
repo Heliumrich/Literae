@@ -1,6 +1,6 @@
 # Architecture statique
 
-Literae privilégie la génération statique. Directus est une source de build, pas une dépendance d’exécution pour les pages éditoriales.
+Literae privilégie la génération statique. Les métadonnées de Directus sont une source de build pour les pages éditoriales ; les images et les fichiers EPUB restent servis par le CMS lors de leur consultation.
 
 ## Frontière d’exécution
 
@@ -19,7 +19,7 @@ L’ordre des livres, leurs noms français, leur Testament et la longueur des ch
 
 ## Mise à jour des contenus
 
-La bibliothèque conserve cette frontière : `books-server.ts` lit les ouvrages non archivés, leur auteur publié et leurs fichiers EPUB. Les routes `/scriptorium/bibliotheque/fichiers/[asset].epub` sont prérendues et copient les fichiers pendant le build : aucun nouvel endpoint dynamique ni jeton CMS côté client. Les URL d’EPUB comprennent une révision de leurs métadonnées. `books.ts` partage le rendu échappé des cartes entre Astro et les filtres natifs. Le lecteur et ses réglages sont isolés dans `src/lib/reader/`, sans second framework ni nouvel îlot hydraté. Un signet local par UUID de livre est commun à ses traductions ; les CFIs restent propres à chaque édition et les changements d’édition passent par la section et sa position relative. Les polices optionnelles sont placées dans `public/reader-fonts/`, hors du précache du comparateur, et injectées dans les cadres EPUB seulement à la sélection.
+La bibliothèque conserve ses notices statiques : `books-server.ts` lit les ouvrages non archivés, leur auteur publié et les métadonnées de leurs éditions. Le build ne télécharge aucun EPUB. Le lecteur charge uniquement le fichier sélectionné, directement depuis les assets publics Directus, avec CORS et sans authentification. Les URL d’EPUB comprennent un paramètre de révision de leurs métadonnées. `books.ts` partage le rendu échappé des cartes entre Astro et les filtres natifs. Le lecteur et ses réglages sont isolés dans `src/lib/reader/`, sans second framework ni nouvel îlot hydraté. Chaque UUID complet de fichier possède son propre signet CFI dans le stockage local ; les changements de traduction ne transposent jamais la progression. Le dernier fichier choisi est mémorisé par livre, séparément des signets. L’ancien signet par livre est récupéré uniquement pour son fichier d’origine. Les polices optionnelles sont placées dans `public/reader-fonts/`, hors du précache du comparateur, et injectées dans les cadres EPUB seulement à la sélection.
 
 La musique conserve la même frontière : `music-server.ts` lit les artistes publiés et les albums avec leurs participations via `albums.artists`. Les relations sont croisées avec les artistes publiés, sans exposer les brouillons. Les descriptions Markdown sont rendues au build avec `micromark` (HTML brut et protocoles dangereux désactivés). `music-client.ts` filtre uniquement les catalogues JSON statiques et partage le rendu des cartes avec le pré-rendu. Les liens YouTube, Spotify et sites officiels sont des liens externes HTTP(S), sans SDK de lecture.
 
