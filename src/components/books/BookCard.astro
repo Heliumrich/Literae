@@ -1,0 +1,7 @@
+---
+import { bookCardHtml, bookItem, type LibraryBook } from '../../lib/books';
+import '../../styles/books.css';
+interface Props { book: LibraryBook; base?: string; eager?: boolean; }
+const { book, base = '', eager = false } = Astro.props;
+---
+<Fragment set:html={bookCardHtml(bookItem(book, base), eager)} />

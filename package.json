@@ -27,6 +27,7 @@
     "@tailwindcss/vite": "4.3.3",
     "astro": "7.2.9",
     "better-sqlite3": "13.0.3",
+    "epubjs": "0.3.93",
     "micromark": "4.0.2",
     "sql.js": "1.15.0",
     "svelte": "5.57.0",
@@ -40,5 +41,10 @@
   },
   "allowScripts": {
     "better-sqlite3@13.0.3": true
+  },
+  "overrides": {
+    "epubjs": {
+      "@xmldom/xmldom": "0.9.12"
+    }
   }
 }

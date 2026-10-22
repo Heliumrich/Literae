@@ -11,7 +11,13 @@ const NAV = [
     href: `${MAIN_BASE}/scriptorium/comparateur`,
     label: "Lire",
     eyebrow: "Les Écritures",
-    match: (p: string) => p.startsWith("/scriptorium") || p.startsWith("/comparateur"),
+    match: (p: string) => p === '/scriptorium' || p.startsWith("/scriptorium/comparateur") || p.startsWith("/comparateur"),
+  },
+  {
+    href: `${MAIN_BASE}/scriptorium/bibliotheque`,
+    label: "Bibliothèque",
+    eyebrow: "Les ouvrages",
+    match: (p: string) => p.startsWith('/scriptorium/bibliotheque'),
   },
   {
     href: `${ART_BASE}/`,

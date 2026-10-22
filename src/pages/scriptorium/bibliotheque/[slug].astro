@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import EpubReader from '../../../components/books/EpubReader.astro';
+import { fetchBooks } from '../../../lib/books-server';
+import { ART_BASE } from '../../../lib/site-links';
+import type { LibraryBook } from '../../../lib/books';
+export const prerender = true;
+export async function getStaticPaths() {
+  return (await fetchBooks()).map(book => ({ params: { slug: book.slug }, props: { book } }));
+}
+interface Props { book: LibraryBook; }
+const { book } = Astro.props;
+---
+<BaseLayout title={book.title} description={book.description || `${book.title}, à lire dans la bibliothèque de Literae.`}>
+  <main class="book-detail page-wrap">
+    <a href="/scriptorium/bibliotheque" class="book-back">← Toute la bibliothèque</a>
+    <article>
+      <header class="book-intro">
+        <p class="eyebrow">Lire · La bibliothèque</p>
+        <h1>{book.title}</h1>
+        {book.author && <p class="book-author"><a href={`${ART_BASE}/personalites/${book.author.slug}`}>{book.author.name}</a></p>}
+        {book.description && <p class="book-lead">{book.description}</p>}
+        {book.tags.length > 0 && <ul class="book-tags">{book.tags.map(tag => <li><a class="tag-pill" href={`/scriptorium/bibliotheque?tags=${encodeURIComponent(tag)}`}>{tag}</a></li>)}</ul>}
+      </header>
+      {book.editions.length > 0 ? <EpubReader bookId={book.id} title={book.title} editions={book.editions} /> : <p class="book-unavailable">Le fichier de lecture de cet ouvrage sera bientôt disponible.</p>}
+    </article>
+  </main>
+</BaseLayout>
+<style>
+  .book-detail { padding-block: var(--page-start) 4rem; }
+  .book-back { color: var(--text-subtle); font-family: var(--type-ui); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+  .book-intro { max-width: 52rem; padding-block: 2.5rem; }
+  .book-intro h1 { margin-top: .5rem; }
+  .book-author { margin-top: .75rem; color: var(--gold); font-size: 1.4rem; }
+  .book-author a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
+  .book-lead { max-width: 48rem; margin-top: 1.5rem; color: var(--text-muted); font-size: 1.1rem; }
+  .book-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; }
+  .book-unavailable { padding-block: 2rem; color: var(--text-muted); }
+</style>

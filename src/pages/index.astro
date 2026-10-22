@@ -9,6 +9,8 @@ import {
   getArtworkTitle,
 } from "../lib/directus";
 import { ART_BASE } from "../lib/site-links";
+import { fetchBooks } from '../lib/books-server';
+import BookCard from '../components/books/BookCard.astro';
 
 type Artwork = {
   id: string | number;
@@ -30,6 +32,7 @@ const featuredImage = featured
   ? getAssetURL(fileIdOf(featured.image), "large")
   : null;
 const recent = artworks.filter((work) => work.id !== featured?.id).slice(0, 4);
+const recentBooks = (await fetchBooks()).sort((a, b) => b.created.localeCompare(a.created)).slice(0, 4);
 
 const gestures = [
   {
@@ -206,6 +209,18 @@ const gestures = [
       )
     }
 
+    {recentBooks.length > 0 && (
+      <section class="recent-books" aria-labelledby="recent-books-title">
+        <div class="page-wrap">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">Entrés dans la bibliothèque</p><h2 id="recent-books-title">Les dernières lectures.</h2></div>
+            <a href="/scriptorium/bibliotheque" class="editorial-link">Toute la bibliothèque →</a>
+          </div>
+          <div class="book-grid">{recentBooks.map(book => <BookCard book={book} />)}</div>
+        </div>
+      </section>
+    )}
+
     <section class="page-wrap future" aria-label="Poursuivre la découverte">
       <p class="eyebrow">Au fil de Literae</p>
       <div class="future-grid">
@@ -225,6 +240,7 @@ const gestures = [
 </BaseLayout>
 
 <style>
+  .recent-books { padding-block: clamp(4rem, 8vw, 7rem); border-block: 1px solid var(--border); }
   .hero {
     overflow: hidden;
     border-bottom: 1px solid var(--border);

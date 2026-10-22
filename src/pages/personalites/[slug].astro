@@ -2,6 +2,10 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ArtworkCard from "../../components/ArtworkCard.astro";
 import Fleur from "../../components/Fleur.astro";
+import BookCard from '../../components/books/BookCard.astro';
+import { fetchBooks } from '../../lib/books-server';
+import { MAIN_BASE } from '../../lib/site-links';
+import type { LibraryBook } from '../../lib/books';
 import {
   fetchAllFromDirectus,
   fileIdOf,
@@ -27,13 +31,14 @@ export async function getStaticPaths() {
         )
       : [];
 
-  const [people, works] = await Promise.all([
+  const [people, works, books] = await Promise.all([
     fetchAllFromDirectus<any>(
       "artists?filter[status][_eq]=published&fields=*&sort=name",
     ),
     fetchAllFromDirectus<any>(
       "artworks?filter[status][_eq]=published&fields=id,slug,title_original,title_french,title_english,year,image,artist.id,artist.name,artist.slug,depicted.artists_id.id&sort=-year",
     ),
+    fetchBooks(),
   ]);
 
   return people
@@ -46,12 +51,13 @@ export async function getStaticPaths() {
           person,
           createdWorks: works.filter((work) => relationId(work.artist) === id),
           depictedWorks: works.filter((work) => depictedIds(work).includes(id)),
+          books: books.filter(book => book.author?.id === id),
         },
       };
     });
 }
 
-const { person, createdWorks, depictedWorks } = Astro.props;
+const { person, createdWorks, depictedWorks, books } = Astro.props;
 const photoSrc = getAssetURL(fileIdOf(person.photo), "medium");
 const photoLarge = getAssetURL(fileIdOf(person.photo), "large");
 const types = parsePersonTypes(person.type);
@@ -181,6 +187,17 @@ const dates =
         </section>
       )
     }
+    {books.length > 0 && (
+      <section class="person-works" aria-labelledby="books-title">
+        <div class="page-wrap">
+          <div class="works-head">
+            <div><p class="eyebrow">Dans la bibliothèque</p><h2 id="books-title">Ouvrages de {person.name}</h2></div>
+            <p>{books.length} ouvrage{books.length > 1 ? 's' : ''}</p>
+          </div>
+          <div class="book-grid">{books.map((book: LibraryBook) => <BookCard book={book} base={MAIN_BASE} />)}</div>
+        </div>
+      </section>
+    )}
   </main>
 </BaseLayout>
 

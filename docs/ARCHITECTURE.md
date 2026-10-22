@@ -7,8 +7,9 @@ Literae privilégie la génération statique. Directus est une source de build, 
 | Élément | Moment d’exécution | Sortie |
 |---|---|---|
 | Pages Astro | Build | HTML statique |
-| Œuvres, personnalités, prières, albums et artistes musicaux Directus | Build | HTML et JSON statiques |
+| Œuvres, personnalités, prières, musique et ouvrages Directus | Build | HTML et JSON statiques |
 | Filtres, thème et visionneuse | Navigateur | JavaScript natif |
+| Lecteur des ouvrages | Navigateur | TypeScript natif + EPUB.js, sur les fiches uniquement |
 | Comparateur | Navigateur | Unique îlot Svelte |
 | Requête de versets et navigation | Serveur | `/api/bible/verses` |
 
@@ -17,6 +18,8 @@ La liste des traductions est lue dans SQLite pendant le build, enrichie par `src
 L’ordre des livres, leurs noms français, leur Testament et la longueur des chapitres sont également extraits au build. Ce petit index, sans texte biblique, alimente le sélecteur de livres et chapitres sans appel réseau et permet au comparateur de calculer les passages précédent et suivant si l’API déployée ne renvoie pas encore le champ `navigation`. Les destinations renvoyées par l’API restent prioritaires lorsqu’elles sont présentes.
 
 ## Mise à jour des contenus
+
+La bibliothèque conserve cette frontière : `books-server.ts` lit les ouvrages non archivés, leur auteur publié et leurs fichiers EPUB. Les routes `/scriptorium/bibliotheque/fichiers/[asset].epub` sont prérendues et copient les fichiers pendant le build : aucun nouvel endpoint dynamique ni jeton CMS côté client. Les URL d’EPUB comprennent une révision de leurs métadonnées. `books.ts` partage le rendu échappé des cartes entre Astro et les filtres natifs. Le lecteur et ses réglages sont isolés dans `src/lib/reader/`, sans second framework ni nouvel îlot hydraté. Un signet local par UUID de livre est commun à ses traductions ; les CFIs restent propres à chaque édition et les changements d’édition passent par la section et sa position relative. Les polices optionnelles sont placées dans `public/reader-fonts/`, hors du précache du comparateur, et injectées dans les cadres EPUB seulement à la sélection.
 
 La musique conserve la même frontière : `music-server.ts` lit les artistes publiés et les albums avec leurs participations via `albums.artists`. Les relations sont croisées avec les artistes publiés, sans exposer les brouillons. Les descriptions Markdown sont rendues au build avec `micromark` (HTML brut et protocoles dangereux désactivés). `music-client.ts` filtre uniquement les catalogues JSON statiques et partage le rendu des cartes avec le pré-rendu. Les liens YouTube, Spotify et sites officiels sont des liens externes HTTP(S), sans SDK de lecture.
 

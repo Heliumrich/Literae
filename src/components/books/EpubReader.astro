@@ -1,0 +1,42 @@
+---
+import type { BookEdition } from '../../lib/books';
+import { READER_FONTS } from '../../lib/reader/preferences';
+import '../../styles/reader.css';
+interface Props { bookId: string; title: string; editions: BookEdition[]; }
+const { bookId, title, editions } = Astro.props;
+---
+<section class="epub-reader" data-book-id={bookId} data-editions={JSON.stringify(editions)} aria-label={`Lecture de ${title}`}>
+  <div class="reader-toolbar">
+    <label class="reader-edition">Édition / traduction
+      <select data-reader="edition" aria-label="Édition ou traduction">{editions.map(edition => <option value={edition.id}>{edition.label}</option>)}</select>
+    </label>
+    <button type="button" data-reader="fullscreen" class="reader-button" hidden>Plein écran</button>
+  </div>
+  <div class="reader-navigation">
+    <label>Sommaire <select data-reader="toc" aria-label="Sommaire" disabled><option>Chargement du sommaire…</option></select></label>
+    <details class="reader-settings">
+      <summary>Réglages de lecture <span aria-hidden="true">Aa</span></summary>
+      <div class="reader-settings-grid">
+        <label>Police <select data-reader="font">{Object.entries(READER_FONTS).map(([key, font]) => <option value={key}>{font.label}</option>)}</select></label>
+        <label>Taille du texte <span><input type="range" data-reader="size" min="16" max="32" step="1" value="20" /><output data-reader="size-label">20 px</output></span></label>
+        <label>Marges <span><input type="range" data-reader="margin" min="8" max="80" step="4" value="32" /><output data-reader="margin-label">32 px</output></span></label>
+        <label>Fond <select data-reader="palette"><option value="auto">Selon le thème du site</option><option value="paper">Blanc</option><option value="cream">Crème</option><option value="night">Nuit</option><option value="oled">Noir OLED</option></select></label>
+        <label class="reader-check"><input data-reader="justify" type="checkbox" /> Justifier le texte</label>
+      </div>
+    </details>
+  </div>
+  <div class="reader-message" data-reader="message" role="status">Ouverture du livre…</div>
+  <p class="reader-error" data-reader="error" role="alert" hidden><span></span> <button type="button" data-reader="retry">Réessayer</button></p>
+  <div class="reader-viewport" data-reader="viewport" tabindex="0" aria-label="Texte du livre" aria-busy="true"></div>
+  <div class="reader-footer">
+    <button type="button" class="reader-button" data-reader="previous" disabled>← Précédent</button>
+    <p data-reader="progress" aria-live="off">La progression est sauvegardée sur cet appareil.</p>
+    <button type="button" class="reader-button" data-reader="next" disabled>Suivant →</button>
+  </div>
+  <noscript><p>Activez JavaScript pour lire cet EPUB dans le navigateur.</p></noscript>
+  <p class="reader-download"><a data-reader="download" href={editions[0].url} download>Télécharger l’EPUB</a> <span>· Reprise de lecture locale, sans compte.</span></p>
+</section>
+<script>
+  import { initEpubReaders } from '../../lib/reader/client';
+  initEpubReaders();
+</script>

@@ -60,12 +60,16 @@ export async function fetchFromDirectus<T = unknown>(
 export async function fetchAllFromDirectus<T = unknown>(
   endpoint: string,
   pageSize = 100,
+  options: { required?: boolean } = {},
 ): Promise<T[]> {
   const items: T[] = [];
   for (let page = 1; page <= 50; page++) {
     const batch = await fetchFromDirectus<T[]>(
       withParams(endpoint, { limit: String(pageSize), page: String(page) }),
     );
+    if (batch === null && options.required) {
+      throw new Error(`Collection Directus indisponible : ${collectionOf(endpoint)}. Vérifiez DIRECTUS_TOKEN et les droits de lecture avant de reconstruire.`);
+    }
     if (!batch?.length) break;
     items.push(...batch);
     if (batch.length < pageSize) break;

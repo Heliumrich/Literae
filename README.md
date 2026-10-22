@@ -15,8 +15,9 @@ Literae est un atelier catholique francophone pour lire la Sainte Écriture, con
 - une galerie d’œuvres chrétiennes reliées à leurs artistes et aux figures représentées ;
 - un mémento de prières françaises et latines ;
 - une collection musicale d’albums et d’artistes, avec leurs présentations, contributions et liens d’écoute ;
+- une bibliothèque d’ouvrages EPUB avec lecteur, traductions et reprise de lecture locale ;
 - deux thèmes de lecture : Parchemin et Nuit ;
-- des espaces réservés pour la bibliothèque et le calendrier liturgique.
+- un espace réservé pour le calendrier liturgique.
 
 ## Architecture
 
@@ -24,9 +25,10 @@ Le site est conçu pour être statique partout où cela est possible.
 
 | Partie | Exécution | Technologie |
 |---|---|---|
-| Pages, œuvres, personnalités, prières et musique | Générées au build | Astro |
+| Pages, œuvres, personnalités, prières, musique et bibliothèque | Générées au build | Astro |
 | Catalogues de filtrage | JSON statique généré au build | Astro + JavaScript natif |
 | Thème, filtres et visionneuse | Dans le navigateur, sans framework | TypeScript |
+| Lecteur EPUB | Chargé sur les fiches de livres | TypeScript natif + EPUB.js |
 | Comparateur biblique | Unique îlot hydraté | Svelte |
 | Lecture des versets et navigation | Unique route serveur | Node.js + SQLite |
 
@@ -71,12 +73,12 @@ En développement, les liens entre le site principal et la galerie restent locau
 
 ## Variables d’environnement
 
-Toutes les variables sont facultatives dans la configuration actuelle.
+Les variables de domaines sont facultatives. Le jeton Directus est nécessaire au build si une collection n’est pas lisible par le rôle public (c’est actuellement le cas de `books`).
 
 | Variable | Valeur par défaut | Description |
 |---|---|---|
 | `DIRECTUS_URL` | `https://api.literae.ch` | URL publique de Directus |
-| `DIRECTUS_TOKEN` | — | Jeton de lecture si le rôle public ne suffit pas |
+| `DIRECTUS_TOKEN` | — | Jeton de lecture du CMS au build ; requis actuellement pour `books` |
 | `PUBLIC_MAIN_SITE_URL` | `https://literae.ch` | Origine publique du site principal |
 | `PUBLIC_ART_SITE_URL` | `https://art.literae.ch` | Origine publique de la galerie |
 
@@ -90,6 +92,7 @@ Les collections actuellement consommées sont :
 - `artists` pour les artistes, saints, souverains et écrivains ;
 - `prayers` pour les titres, textes français et latins, descriptions et étiquettes.
 - `albums` et `musical_artists` pour la collection musicale ; la relation `albums.artists` expose les participations et leurs `roles`.
+- `books` pour les ouvrages, avec leur auteur (`artists`) et leurs éditions (`ebook_files.directus_files_id`). Cette collection utilise `archived`, sans champ `status`.
 
 Les fiches musicales affichent les descriptions Markdown, les tags et les liens externes renseignés dans le CMS. Les types généraux des artistes sont distincts de leurs rôles sur chaque album. Seuls les albums et artistes `published` sont exposés, y compris dans les relations. Les filtres (recherche, tags, types et artiste associé) utilisent `/musique/albums.json` et `/musique/artistes.json`, générés au build. Aucun lecteur embarqué ou import de pistes n’est utilisé.
 
@@ -100,6 +103,20 @@ Les images restent servies par Directus avec les transformations `thumbnail`, `m
 Le catalogue des œuvres alterne les artistes dans l’ordre alphabétique de leur nom affiché (A à Z, tri français) : une œuvre de chacun, puis la suivante, jusqu’à épuisement de toutes les œuvres. Les œuvres d’un même artiste restent classées par ajout récent. Cet ordre est calculé au build et conservé dans le JSON statique ; les résultats filtrés sont également triés et alternés avant pagination. Les vignettes présentent l’œuvre entière dans un cadre carré.
 
 La visionneuse navigable du catalogue et des collections d’une personnalité précharge uniquement l’image suivante dans la qualité sélectionnée. Depuis une fiche d’œuvre, elle utilise une vue épurée, sans légende ni navigation. Le bouton **Épique**, réservé aux œuvres attribuées à Gustave Doré, applique une courbe en S avec un filtre SVG côté navigateur ; les fichiers Directus et les téléchargements restent inchangés.
+
+## Bibliothèque
+
+Le catalogue `/scriptorium/bibliotheque` propose la recherche, les vues grille/liste, le tri par titre, auteur ou étiquettes et les mêmes filtres par tags que la galerie. L’accueil présente les quatre derniers ajouts et les personnalités présentent leurs ouvrages après leurs collections d’art.
+
+Les livres non archivés sont générés au build. En l’absence de champ `slug` dans `books`, l’URL combine le titre normalisé et les huit premiers caractères de l’UUID (`confessions-a758f0c9`). L’UUID complet identifie la progression, qui survit à un changement de titre. Changer le titre change toutefois l’URL de la fiche.
+
+Chaque fichier EPUB est copié au build dans `/scriptorium/bibliotheque/fichiers/` avec une URL versionnée par les métadonnées de l’asset. Le navigateur charge uniquement l’édition sélectionnée, depuis le site, sans jeton Directus ni dépendance au CORS du CMS. Un EPUB indisponible fait échouer le build. Les labels utilisent la description du fichier si renseignée, sinon son nom de téléchargement ; pour différencier les traductions, renseignez ces descriptions dans Directus.
+
+Le lecteur EPUB.js utilise le défilement continu et le sommaire de l’ouvrage. Les XHTML voisin précédent et suivant sont préchargés ; les vues éloignées sont libérées par le gestionnaire continu. Les scripts contenus dans les EPUB restent désactivés. La police du corps, la taille, les marges, la justification et le fond sont réglables. Le fond automatique suit le thème du site ; Blanc, Crème, Nuit et Noir OLED fixent aussi une couleur de texte lisible. Les titres conservent leur police. Literata, Lora et Libre Baskerville sont auto-hébergées en WOFF2, avec variantes latines normale/italique et licences OFL ; leurs fichiers ne sont demandés qu’à la sélection, hors du précache du comparateur.
+
+Les réglages et la progression restent dans le `localStorage` du navigateur. Un seul signet est conservé par ouvrage, quelle que soit sa traduction. La reprise dans le même fichier utilise un EPUB CFI précis ; dans une autre édition elle retrouve la section par son titre, puis une position relative, ou se replie sur la proportion du livre si les sommaires diffèrent. Cette correspondance entre traductions est approximative. Aucun compte ni synchronisation entre appareils n’est utilisé. Le lecteur signale si le navigateur refuse la sauvegarde. La bibliothèque n’est pas incluse dans le mode hors ligne de la PWA du comparateur.
+
+Les modules `books-server.ts` et les routes statiques gèrent le CMS ; `books-client.ts` gère le catalogue ; `src/lib/reader/` et `EpubReader.astro` isolent la lecture. Validation : `npm run test:server` et `npm run test:pwa` (avec un navigateur Playwright installé).
 
 ## Comparateur sur smartphone et hors ligne
 
@@ -145,7 +162,7 @@ La PWA continue à proposer séparément les nouvelles releases à l’utilisate
 | `/` | Accueil éditorial |
 | `/scriptorium` | Présentation du pupitre de lecture |
 | `/scriptorium/comparateur` | Comparateur biblique |
-| `/scriptorium/bibliotheque` | Bibliothèque, espace réservé |
+| `/scriptorium/bibliotheque` et `/scriptorium/bibliotheque/[slug]` | Catalogue des ouvrages et lecteur EPUB |
 | `/art` | Accueil local de la galerie |
 | `/oeuvres` et `/oeuvres/[slug]` | Catalogue et fiches d’œuvres |
 | `/personalites` et `/personalites/[slug]` | Catalogue et notices biographiques |
